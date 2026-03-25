@@ -1,0 +1,9 @@
+{
+  "name": "Log All DNS Queries",
+  "description": "Passes and logs all DNS queries for tunneling and C2 beaconing detection in SentinelOne",
+  "precedence": 1,
+  "enabled": true,
+  "action": "allow",
+  "filters": ["dns"],
+  "traffic": "any(dns.domains[*] matches \".*\")"
+}
