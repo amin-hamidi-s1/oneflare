@@ -1,10 +1,6 @@
 name: Deploy Workers
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'cloudflare/workers/**'
   workflow_dispatch:
 
 jobs:
