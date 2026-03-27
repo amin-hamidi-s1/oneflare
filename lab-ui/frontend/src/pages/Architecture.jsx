@@ -4,7 +4,7 @@ const WORKERS = [
   {
     name: 'Shop Worker',
     description: 'AcmeCorp webstore — WAF attack surface',
-    url: 'shop.acmecorp-lab.workers.dev',
+    url: 'https://acmecorp-shop.acmecorp-lab.workers.dev',
     routes: ['/search', '/products', '/reviews'],
     color: 'orange',
     borderClass: 'border-orange-500/30',
@@ -14,7 +14,7 @@ const WORKERS = [
   {
     name: 'Portal Worker',
     description: 'Cloudflare Access-protected admin portal',
-    url: 'portal.acmecorp-lab.workers.dev',
+    url: 'https://acmecorp-portal.acmecorp-lab.workers.dev',
     routes: ['/login', '/dashboard'],
     color: 'purple',
     borderClass: 'border-purple-500/30',
@@ -24,7 +24,7 @@ const WORKERS = [
   {
     name: 'API Worker',
     description: 'REST API with bulk export endpoint',
-    url: 'api.acmecorp-lab.workers.dev',
+    url: 'https://acmecorp-api.acmecorp-lab.workers.dev',
     routes: ['/api/v1/auth/login', '/api/v1/customers/export'],
     color: 'blue',
     borderClass: 'border-blue-500/30',
@@ -222,7 +222,10 @@ export default function Architecture() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm text-slate-300 mb-1">{worker.description}</div>
-                  <div className={`text-xs font-mono ${worker.textClass} mb-2`}>{worker.url}</div>
+                  <a href={worker.url} target="_blank" rel="noopener noreferrer"
+                    className={`text-xs font-mono ${worker.textClass} mb-2 hover:underline inline-block`}>
+                    {worker.url}
+                  </a>
                   <div className="flex flex-wrap gap-2">
                     {worker.routes.map(route => (
                       <span key={route} className="text-xs font-mono text-slate-500 bg-white/5 border border-white/10 rounded px-2 py-0.5">
