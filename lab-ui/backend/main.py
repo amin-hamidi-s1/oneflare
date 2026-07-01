@@ -1,10 +1,12 @@
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 import asyncio
 import sys
 import json
 import os
 from pathlib import Path
+from typing import Optional, Union
 
 app = FastAPI(title="OneFlare Lab API")
 
@@ -14,6 +16,24 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ---------------------------------------------------------------------------
+# Campaign engine — imported at startup; non-fatal if attack-scripts absent
+# ---------------------------------------------------------------------------
+try:
+    import campaign_engine as _ce
+    _CAMPAIGN_ENGINE_OK = True
+except Exception as _ce_err:
+    _CAMPAIGN_ENGINE_OK = False
+    _ce = None  # type: ignore[assignment]
+    _CE_ERR = str(_ce_err)
+
+
+class LaunchRequest(BaseModel):
+    campaign: str
+    mode: str = "live"                          # "live" | "preseed"
+    phase: Union[int, str] = "all"              # int phase number or "all"
+    volume: str = "medium"                      # "low" | "medium" | "high"
 
 SCRIPTS_DIR = Path("/app/attack-scripts")
 
@@ -57,7 +77,7 @@ async def run_scenario(websocket: WebSocket, scenario_id: str):
     config = json.loads(config_msg)
 
     env = os.environ.copy()
-    env["CLOUDFLARE_DOMAIN"] = config.get("domain", "acmecorp-lab.workers.dev")
+    env["CLOUDFLARE_DOMAIN"] = config.get("domain", "novamind-lab.workers.dev")
     if config.get("shop_url"):
         env["SHOP_URL_OVERRIDE"] = config["shop_url"]
     if config.get("portal_url"):
@@ -68,6 +88,8 @@ async def run_scenario(websocket: WebSocket, scenario_id: str):
         env["ATTACK_DELAY"] = str(config["delay"])
     if config.get("jitter"):
         env["ATTACK_JITTER"] = str(config["jitter"])
+    if config.get("gateway_doh_url"):
+        env["CF_GATEWAY_DOH_URL"] = config["gateway_doh_url"]
 
     if scenario_id == "all":
         cmd = [sys.executable, str(SCRIPTS_DIR / "demo.py")]
@@ -115,3 +137,106 @@ async def run_scenario(websocket: WebSocket, scenario_id: str):
 @app.get("/api/scenarios")
 async def list_scenarios():
     return {"scenarios": list(SCENARIO_SCRIPTS.keys())}
+
+
+# ---------------------------------------------------------------------------
+# Campaign endpoints (Wave 2 — ThreatOps drip-flow)
+# ---------------------------------------------------------------------------
+
+def _require_engine():
+    """Raise 503 if the campaign engine failed to import."""
+    if not _CAMPAIGN_ENGINE_OK:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Campaign engine unavailable: {_CE_ERR}",
+        )
+
+
+@app.get("/api/campaigns")
+async def get_campaigns():
+    """
+    Return all campaign + phase metadata.
+    Callables (fire_one / fire_many) are stripped — not JSON-serialisable.
+    Response: dict[campaign_key -> {name, campaign, color, icon, target_role,
+                                    num_phases, phases: [...phase_dicts]}]
+    """
+    _require_engine()
+    return _ce.get_campaigns_meta()
+
+
+@app.post("/api/campaign/launch")
+async def campaign_launch(body: LaunchRequest):
+    """
+    Start a drip-flow campaign.
+
+    Request  : {campaign, mode:"live"|"preseed", phase:int|"all", volume:"low"|"medium"|"high"}
+    Response : {started:true, campaign, mode, phase, volume}
+    Errors   : 400 if already running or unknown campaign/mode/volume
+               503 if campaign engine unavailable
+    """
+    _require_engine()
+    try:
+        loop = asyncio.get_event_loop()
+        _ce.launch(body.campaign, body.mode, body.phase, body.volume, loop)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return {
+        "started":  True,
+        "campaign": body.campaign,
+        "mode":     body.mode,
+        "phase":    body.phase,
+        "volume":   body.volume,
+    }
+
+
+@app.get("/api/campaign/logs")
+async def campaign_logs(since: int = Query(default=0, ge=0)):
+    """
+    Incremental log polling.
+
+    Query param : since=<id>  (return only entries with id > since; default 0 = all)
+    Response    : {entries:[...log_dicts], running:bool, phase:int|null, campaign:str|null}
+    """
+    _require_engine()
+    status  = _ce.get_status()
+    entries = _ce.get_logs(since)
+    return {
+        "entries":  entries,
+        "running":  status["running"],
+        "phase":    status["phase"],
+        "campaign": status["campaign"],
+    }
+
+
+@app.get("/api/campaign/status")
+async def campaign_status():
+    """
+    Current engine state snapshot.
+    Response: {running:bool, phase:int|null, campaign:str|null}
+    """
+    _require_engine()
+    return _ce.get_status()
+
+
+@app.post("/api/campaign/stop")
+async def campaign_stop():
+    """
+    Stop the running campaign.
+    If the campaign is 'ctf', signal_incident(False) is called automatically.
+    Response: {stopped:true}
+    """
+    _require_engine()
+    _ce.stop()
+    return {"stopped": True}
+
+
+@app.post("/api/campaign/clear-incident")
+async def campaign_clear_incident():
+    """
+    Clear the NovaMind/Pyxis status page banner via signal_incident(False).
+    Idempotent — safe to call even when no campaign is running.
+    Response: {cleared:true}
+    """
+    _require_engine()
+    _ce.clear_incident()
+    return {"cleared": True}
