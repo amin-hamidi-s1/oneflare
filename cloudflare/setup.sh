@@ -110,14 +110,14 @@ fi
 step "Step 3/7 — Deploying Workers"
 
 for worker in shop portal api; do
-  info "Deploying acmecorp-$worker..."
+  info "Deploying novamind-$worker..."
   (cd "$SCRIPT_DIR/workers/$worker" && npx wrangler deploy --config wrangler.toml 2>&1 \
     | grep -E "Uploaded|Deployed|Error|error" || true)
 
   # Enable workers.dev route
-  ENABLE=$(cf_api POST "/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/acmecorp-$worker/subdomain" \
+  ENABLE=$(cf_api POST "/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/novamind-$worker/subdomain" \
     --data '{"enabled":true}' | cf_ok)
-  [[ "$ENABLE" == "ok" ]] && success "Deployed + workers.dev enabled: acmecorp-$worker" \
+  [[ "$ENABLE" == "ok" ]] && success "Deployed + workers.dev enabled: novamind-$worker" \
                            || warn "workers.dev enable returned: $ENABLE"
 done
 
@@ -128,7 +128,7 @@ for sub in shop portal api; do
   RESULT=$(cf_api POST "/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/domains" \
     --data "{
       \"hostname\": \"$sub.$CLOUDFLARE_DOMAIN\",
-      \"service\":  \"acmecorp-$sub\",
+      \"service\":  \"novamind-$sub\",
       \"environment\": \"production\",
       \"zone_id\": \"$CLOUDFLARE_ZONE_ID\"
     }" | python3 -c "
@@ -139,7 +139,7 @@ else: print('err:'+str(d['errors']))
 ")
 
   if [[ "$RESULT" == ok* ]]; then
-    success "Custom domain mapped: $sub.$CLOUDFLARE_DOMAIN → acmecorp-$sub"
+    success "Custom domain mapped: $sub.$CLOUDFLARE_DOMAIN → novamind-$sub"
   else
     # Fallback: plain DNS record
     DNS=$(cf_api POST "/zones/$CLOUDFLARE_ZONE_ID/dns_records" \
@@ -201,7 +201,7 @@ done
 step "Step 6/7 — Configuring Cloudflare Access (portal)"
 
 ACCESS_RESULT=$(cf_api POST "/accounts/$CLOUDFLARE_ACCOUNT_ID/access/apps" --data "{
-  \"name\": \"AcmeCorp Employee Portal\",
+  \"name\": \"NovaMind Employee Portal\",
   \"domain\": \"portal.$CLOUDFLARE_DOMAIN\",
   \"type\": \"self_hosted\",
   \"session_duration\": \"24h\",
@@ -222,10 +222,10 @@ else
 
   if [[ "$APP_ID" != "exists" ]]; then
     POLICY=$(cf_api POST "/accounts/$CLOUDFLARE_ACCOUNT_ID/access/apps/$APP_ID/policies" --data '{
-      "name": "Allow AcmeCorp Employees",
+      "name": "Allow NovaMind Employees",
       "decision": "allow",
       "precedence": 1,
-      "include": [{"email_domain": {"domain": "acmecorp.com"}}],
+      "include": [{"email_domain": {"domain": "novamind.ai"}}],
       "require": [],
       "exclude": []
     }' | cf_ok)
@@ -262,8 +262,8 @@ echo "    1. Logpush — Zone:    HTTP requests, Firewall events, DNS logs"
 echo "    2. Logpush — Zero Trust: Access requests, Gateway DNS,"
 echo "                             Audit logs v2, Gateway HTTP"
 echo "    3. Wrangler secrets for portal + api credentials:"
-echo "       wrangler secret put PORTAL_USERNAME --name acmecorp-portal"
-echo "       wrangler secret put PORTAL_PASSWORD --name acmecorp-portal"
-echo "       wrangler secret put API_USERNAME    --name acmecorp-api"
-echo "       wrangler secret put API_PASSWORD    --name acmecorp-api"
+echo "       wrangler secret put PORTAL_USERNAME --name novamind-portal"
+echo "       wrangler secret put PORTAL_PASSWORD --name novamind-portal"
+echo "       wrangler secret put API_USERNAME    --name novamind-api"
+echo "       wrangler secret put API_PASSWORD    --name novamind-api"
 echo ""
