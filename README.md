@@ -16,7 +16,7 @@ Hyperautomation → Cloudflare response actions
 
 ## What Gets Deployed
 
-Three linked Cloudflare Workers forming a mock company ("AcmeCorp"):
+Three linked Cloudflare Workers forming a mock company ("NovaMind"):
 
 | Worker | URL | Attack Surface |
 |---|---|---|
@@ -48,7 +48,7 @@ Sign up at [cloudflare.com](https://cloudflare.com) if you don't have one.
 
 ### 2. Add your domain
 1. Go to **Dashboard → Add a Site**
-2. Enter your domain (e.g. `acmecorp.dev`) and select the **Free** plan
+2. Enter your domain (e.g. `novamind.ai`) and select the **Free** plan
 3. Cloudflare will scan existing DNS records — confirm and continue
 4. Copy the two **nameserver addresses** Cloudflare gives you (e.g. `marge.ns.cloudflare.com`)
 5. Go to your domain registrar and update the domain's nameservers to Cloudflare's
@@ -143,12 +143,12 @@ The portal and API Workers accept credentials via Wrangler secrets (not hardcode
 
 ```bash
 # Portal credentials (used in credential stuffing simulation)
-wrangler secret put PORTAL_USERNAME --name acmecorp-portal
-wrangler secret put PORTAL_PASSWORD --name acmecorp-portal
+wrangler secret put PORTAL_USERNAME --name novamind-portal
+wrangler secret put PORTAL_PASSWORD --name novamind-portal
 
 # API credentials (used in data exfil simulation)
-wrangler secret put API_USERNAME --name acmecorp-api
-wrangler secret put API_PASSWORD --name acmecorp-api
+wrangler secret put API_USERNAME --name novamind-api
+wrangler secret put API_PASSWORD --name novamind-api
 ```
 
 If secrets are not set, the Workers fall back to default lab credentials documented in the attack scripts.
@@ -162,7 +162,8 @@ If secrets are not set, the Workers fall back to default lab credentials documen
 | `CLOUDFLARE_API_TOKEN` | Scoped API token | Dashboard → My Profile → API Tokens |
 | `CLOUDFLARE_ACCOUNT_ID` | Your account ID | Dashboard right sidebar |
 | `CLOUDFLARE_ZONE_ID` | Zone ID for your domain | Zone overview right sidebar |
-| `CLOUDFLARE_DOMAIN` | Your domain (e.g. `acmecorp.dev`) | Whatever domain you added |
+| `CLOUDFLARE_DOMAIN` | Your domain (e.g. `novamind.ai`) | Whatever domain you added |
+| `CF_GATEWAY_DOH_URL` | Location-specific Gateway DoH endpoint | `one.dash.cloudflare.com → Networks → Resolvers & Proxies → DNS locations → [your location] → Edit → Setup instructions` — copy the **DNS over HTTPS** URL (hex subdomain, not your team name) |
 
 Copy `.env.example` to `.env.local`, populate it, and run `source .env.local` before any commands.
 **Never commit `.env.local`** — it is gitignored.

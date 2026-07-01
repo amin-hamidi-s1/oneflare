@@ -1,4 +1,4 @@
-# AcmeCorp — Cloudflare Infrastructure Plan
+# NovaMind — Cloudflare Infrastructure Plan
 
 ## Overview
 
@@ -23,7 +23,7 @@ YOUR_DOMAIN (your Cloudflare zone)
 ### Phase 2 — DNS Records (CLI)
 ```bash
 # Create subdomain DNS records pointing to Workers
-wrangler dns create shop.acmecorp.dev CNAME shop.acmecorp.dev.workers.dev
+wrangler dns create shop.novamind.ai CNAME shop.novamind.ai.workers.dev
 # (or set via CF API — scripts in attack-scripts/setup/)
 ```
 
@@ -36,8 +36,8 @@ Create the following custom firewall rules on the zone:
 ### Phase 4 — Cloudflare Access (Console)
 Portal requires console setup:
 1. Go to Zero Trust → Access → Applications
-2. Create application: `portal.acmecorp.dev`
-3. Policy: Allow `@acmecorp.com` email domain
+2. Create application: `portal.novamind.ai`
+3. Policy: Allow `@novamind.ai` email domain
 4. Enable Access audit logging
 
 ### Phase 5 — Gateway DNS Policy (Console)
@@ -58,28 +58,28 @@ Confirm these datasets are flowing to SentinelOne:
 ### shop (webstore)
 ```toml
 # workers/shop/wrangler.toml
-name = "acmecorp-shop"
+name = "novamind-shop"
 main = "src/index.js"
 compatibility_date = "2024-01-01"
-routes = [{ pattern = "shop.acmecorp.dev/*", zone_name = "acmecorp.dev" }]
+routes = [{ pattern = "shop.novamind.ai/*", zone_name = "novamind.ai" }]
 ```
 
 ### portal (employee portal)
 ```toml
 # workers/portal/wrangler.toml
-name = "acmecorp-portal"
+name = "novamind-portal"
 main = "src/index.js"
 compatibility_date = "2024-01-01"
-routes = [{ pattern = "portal.acmecorp.dev/*", zone_name = "acmecorp.dev" }]
+routes = [{ pattern = "portal.novamind.ai/*", zone_name = "novamind.ai" }]
 ```
 
 ### api (REST API)
 ```toml
 # workers/api/wrangler.toml
-name = "acmecorp-api"
+name = "novamind-api"
 main = "src/index.js"
 compatibility_date = "2024-01-01"
-routes = [{ pattern = "api.acmecorp.dev/*", zone_name = "acmecorp.dev" }]
+routes = [{ pattern = "api.novamind.ai/*", zone_name = "novamind.ai" }]
 ```
 
 ## Required Environment Variables

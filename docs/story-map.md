@@ -6,7 +6,7 @@ Each scenario is a self-contained story: attack script generates traffic → Clo
 
 ## Scenario 1: SQL Injection Attack on Webstore
 
-**Target**: `shop.acmecorp.dev`
+**Target**: `shop.novamind.ai`
 **Attack vector**: WAF
 
 ### Attack Script
@@ -71,7 +71,7 @@ Trigger: S1 detection "CF-WAF-SQLi-Burst" fires
 
 ## Scenario 2: Credential Stuffing on Employee Portal
 
-**Target**: `portal.acmecorp.dev`
+**Target**: `portal.novamind.ai`
 **Attack vector**: Cloudflare Access / ZTNA
 
 ### Attack Script
@@ -87,9 +87,9 @@ Pattern: 200+ unique usernames, rotating through 5 IPs over 10 minutes.
 ```json
 {
   "Action": "login_failed",
-  "UserEmail": "user@acmecorp.com",
+  "UserEmail": "user@novamind.ai",
   "ClientIP": "5.6.7.8",
-  "AppDomain": "portal.acmecorp.dev",
+  "AppDomain": "portal.novamind.ai",
   "Timestamp": "2026-03-25T10:00:01Z"
 }
 ```
@@ -100,7 +100,7 @@ Pattern: 200+ unique usernames, rotating through 5 IPs over 10 minutes.
 ```
 event.type = "CloudflareAccessAudit"
 AND event.Action = "login_failed"
-AND event.AppDomain = "portal.acmecorp.dev"
+AND event.AppDomain = "portal.novamind.ai"
 THRESHOLD: 20 distinct UserEmail values from same ClientIP in 300 seconds
 ```
 **Severity**: Critical
@@ -133,7 +133,7 @@ Trigger: S1 detection "CF-Access-CredStuffing" fires
 
 ## Scenario 3: Impossible Travel (Access)
 
-**Target**: `portal.acmecorp.dev`
+**Target**: `portal.novamind.ai`
 **Attack vector**: Cloudflare Access
 
 ### Attack Script
@@ -207,7 +207,7 @@ Pattern:
   "ResolvedIPs": [],
   "Policy": "allowed",
   "DeviceID": "device-abc",
-  "UserEmail": "employee@acmecorp.com"
+  "UserEmail": "employee@novamind.ai"
 }
 ```
 
@@ -250,7 +250,7 @@ Trigger: S1 detection "CF-Gateway-DNSTunnel" fires
 
 ## Scenario 5: Data Exfiltration via API
 
-**Target**: `api.acmecorp.dev`
+**Target**: `api.novamind.ai`
 **Attack vector**: Workers logs + WAF
 
 ### Attack Script

@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-A mock company ("AcmeCorp") deployed across Cloudflare that serves as a detection engineering and SOC automation lab. The goal is a complete, demo-ready story:
+A mock company ("NovaMind") deployed across Cloudflare that serves as a detection engineering and SOC automation lab. The goal is a complete, demo-ready story:
 
 ```
 Attack simulation scripts
@@ -16,20 +16,20 @@ SentinelOne Detections (STAR Rules)
 Hyperautomation Workflows (Cloudflare actions)
 ```
 
-## Mock Company Infrastructure ("AcmeCorp")
+## Mock Company Infrastructure ("NovaMind")
 
 | Component | Cloudflare Product | Purpose |
 |---|---|---|
-| `shop.acmecorp.dev` | Workers + WAF | Public webstore — product pages, search, login, checkout |
-| `portal.acmecorp.dev` | Workers + Access (ZTNA) | Employee portal — protected by Cloudflare Access |
-| `api.acmecorp.dev` | Workers + WAF | Internal REST API gateway |
+| `shop.novamind.ai` | Workers + WAF | Public webstore — product pages, search, login, checkout |
+| `portal.novamind.ai` | Workers + Access (ZTNA) | Employee portal — protected by Cloudflare Access |
+| `api.novamind.ai` | Workers + WAF | Internal REST API gateway |
 
 All three are deployed as Cloudflare Workers sites, protected by WAF rules, and route through Cloudflare Gateway for Zero Trust DNS/HTTP filtering.
 
 ## Attack Scenarios
 
 ### 1. Web Application Attacks (WAF)
-Targets `shop.acmecorp.dev`. Scripts simulate:
+Targets `shop.novamind.ai`. Scripts simulate:
 - SQL injection on `/search?q=`
 - XSS on product review forms
 - Path traversal on asset endpoints
@@ -38,7 +38,7 @@ Targets `shop.acmecorp.dev`. Scripts simulate:
 **Logs generated**: WAF logs (`RayID`, `ClientIP`, `Action`, `RuleID`, `MatchedData`)
 
 ### 2. Credential Attacks (Access / ZTNA)
-Targets `portal.acmecorp.dev`. Scripts simulate:
+Targets `portal.novamind.ai`. Scripts simulate:
 - Credential stuffing (many users, fast)
 - Brute force (one user, many passwords)
 - Impossible travel (same user, two distant IPs in short window)
@@ -54,7 +54,7 @@ Simulated via scripts that generate:
 **Logs generated**: Gateway DNS logs (`QueryName`, `QueryType`, `ResolvedIPs`, `Policy`)
 
 ### 4. Data Exfiltration (Workers)
-Targets `api.acmecorp.dev`. Scripts simulate:
+Targets `api.novamind.ai`. Scripts simulate:
 - Bulk data pull via authenticated API (large response bodies)
 - Unexpected endpoint enumeration
 - High-volume requests to `/export` or `/download` routes
@@ -69,14 +69,29 @@ Already configured. Datasets flowing:
 - Access logs (Audit)
 
 ## Agents Available
-All 26 agents (10 CoralCollective + 16 GSD) are in `.claude/agents/`.
+Agents live in `.claude/agents/`. Fleet = a coordinator + project specialists + 10 generalists.
+Let **`agent-manager`** route non-trivial tasks (it discovers the registry at runtime, picks
+the model, and dispatches specialists in parallel) — or invoke a specialist directly.
 
-Key agents for this project:
-- `security` — detection rule writing, attack simulation review
-- `devops` — Wrangler/CLI deployment of Workers
-- `backend` — Workers source code
-- `architect` — story design and integration architecture
-- `technical-writer` — runbook and demo script authoring
+**Coordinator**
+- `agent-manager` — scans agents, classifies the task, assigns the model, dispatches in parallel
+
+**Project specialists**
+- `cloudflare-specialist` — Workers, WAF, Gateway, Access, DNS, Logpush, wrangler deploys
+- `threat-simulation-engineer` — purple-team attack scripts (`attack-scripts/`), ATT&CK-mapped
+- `s1-log-parser-engineer` — Cloudflare Logpush → OCSF SDL parsers (`parsers/`)
+- `s1-detection-engineer` — PowerQuery hunts + STAR/scheduled detection rules (`detections/`)
+- `s1-hyperautomation-engineer` — SOAR response workflows (`hyperautomation/`)
+- `s1-platform-engineer` — SDL/Mgmt Console API, dashboards, packaged solutions, asset enrichment
+- `s1-soc-analyst` — Purple SOC Analyst triage / investigation / reporting persona
+
+**Generalists (CoralCollective):** `architect`, `security`, `ai-engineer`, `backend`,
+`frontend`, `qa`, `devops`, `compliance`, `fullstack`, `technical-writer`.
+
+### SentinelOne development
+All S1 work follows **`.claude/rules/s1-development.md`**, which points to the vendored
+official plugin at **`reference/s1-secops-skills/`** (cloned from `Sentinel-One/ai-siem`;
+gitignored — re-clone instructions are in the rule file). Read both before any S1 task.
 
 ## Claude Working Instructions
 

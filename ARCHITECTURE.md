@@ -2,7 +2,7 @@
 
 ## System Overview
 
-OneFlare is a detection-engineering lab built around a mock company ("AcmeCorp") deployed on Cloudflare. It has three distinct layers: a simulated target infrastructure, a set of attack scripts, and a local control-plane UI that ties them together.
+OneFlare is a detection-engineering lab built around a mock company ("NovaMind") deployed on Cloudflare. It has three distinct layers: a simulated target infrastructure, a set of attack scripts, and a local control-plane UI that ties them together.
 
 ```
 ┌─────────────────────────────────────────┐
@@ -120,7 +120,7 @@ Six Python simulation scripts that generate realistic attack traffic against the
 
 | Variable | Effect |
 |---|---|
-| `CLOUDFLARE_DOMAIN` | Base domain — e.g. `acmecorp-lab.workers.dev` |
+| `CLOUDFLARE_DOMAIN` | Base domain — e.g. `novamind-lab.workers.dev` |
 | `SHOP_URL_OVERRIDE` | Point `sqli`/`xss`/`traversal` at a custom URL |
 | `PORTAL_URL_OVERRIDE` | Point `cred` at a custom URL |
 | `API_URL_OVERRIDE` | Point `exfil` at a custom URL |
@@ -132,15 +132,15 @@ Six Python simulation scripts that generate realistic attack traffic against the
 
 ## Layer 3 — Cloudflare Infrastructure (`cloudflare/`)
 
-Three Cloudflare Workers forming the mock "AcmeCorp" target. All deployed via the Wrangler CLI (`wrangler deploy`) and covered by a single setup script (`cloudflare/setup.sh`).
+Three Cloudflare Workers forming the mock "NovaMind" target. All deployed via the Wrangler CLI (`wrangler deploy`) and covered by a single setup script (`cloudflare/setup.sh`).
 
 ### Workers
 
 | Worker name | Route | Purpose | Intentional vulnerabilities |
 |---|---|---|---|
-| `acmecorp-shop` | `shop.DOMAIN` | Public webstore | XSS via reflected `?q=` on `/search`; path traversal on `/products/` |
-| `acmecorp-portal` | `portal.DOMAIN` | Employee portal (Access-protected) | Login endpoint generates Access audit logs — credential stuffing target |
-| `acmecorp-api` | `api.DOMAIN` | REST API gateway | Open `/api/v1/customers/export` endpoint — data exfil target |
+| `novamind-shop` | `shop.DOMAIN` | Public webstore | XSS via reflected `?q=` on `/search`; path traversal on `/products/` |
+| `novamind-portal` | `portal.DOMAIN` | Employee portal (Access-protected) | Login endpoint generates Access audit logs — credential stuffing target |
+| `novamind-api` | `api.DOMAIN` | REST API gateway | Open `/api/v1/customers/export` endpoint — data exfil target |
 
 **Stack:** plain JavaScript (ES modules), no framework, deployed with Wrangler v4. Each Worker lives in `cloudflare/workers/<name>/src/index.js` with a `wrangler.toml` alongside it.
 
@@ -223,9 +223,9 @@ oneflare/
 ├── cloudflare/
 │   ├── setup.sh               # One-shot setup script
 │   ├── workers/
-│   │   ├── shop/              # acmecorp-shop Worker (JS)
-│   │   ├── portal/            # acmecorp-portal Worker (JS)
-│   │   └── api/               # acmecorp-api Worker (JS)
+│   │   ├── shop/              # novamind-shop Worker (JS)
+│   │   ├── portal/            # novamind-portal Worker (JS)
+│   │   └── api/               # novamind-api Worker (JS)
 │   ├── waf/
 │   │   └── rules.json
 │   └── gateway/
