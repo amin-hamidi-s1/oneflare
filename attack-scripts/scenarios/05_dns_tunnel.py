@@ -22,9 +22,9 @@ console = Console()
 # C2-like subdomains rooted under the lab's own domain so Gateway can log them.
 # These are clearly fake subdomains — no real traffic is generated.
 C2_SUFFIXES = [
-    "c2tunnel.novamind-lab.workers.dev",
-    "beacon.novamind-lab.workers.dev",
-    "update.novamind-lab.workers.dev",
+    "c2tunnel.acmecorp-lab.workers.dev",
+    "beacon.acmecorp-lab.workers.dev",
+    "update.acmecorp-lab.workers.dev",
 ]
 
 

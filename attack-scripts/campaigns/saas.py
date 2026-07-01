@@ -1,6 +1,6 @@
 """
 campaigns/saas.py — Operation Tenant Escape
-5-phase attack chain. NovaMind target: novamind-api + novamind-shop.
+5-phase attack chain. NovaMind target: acmecorp-api + acmecorp-shop.
 
 MITRE ATT&CK mapping
 --------------------
@@ -29,14 +29,14 @@ from .engine import send_request, log_phase_event, sleep_between_requests
 
 # Recon paths: NovaMind routes first, then SaaS-specific paths.
 RECON_PATHS = [
-    # NovaMind real routes (novamind-api)
+    # NovaMind real routes (acmecorp-api)
     "/api/v1/admin",
     "/api/v1/users",
     "/api/v1/training-data",
     "/api/v1/models",
     "/api/v1/billing",
     "/api/v1/health",
-    # NovaMind real routes (novamind-shop)
+    # NovaMind real routes (acmecorp-shop)
     "/search",
     "/login",
     # SaaS-specific (yields WAF/bot signal even without worker route)
@@ -332,7 +332,7 @@ PHASES = [
             "configuration on NovaMind platform."
         ),
         "mitre_technique": "T1595.002 — Active Scanning: Vulnerability Scanning + T1592 Gather Victim Host Info",
-        "target_route": "novamind-api /api/v1/*, novamind-shop /graphql (recon signal)",
+        "target_route": "acmecorp-api /api/v1/*, acmecorp-shop /graphql (recon signal)",
         "what_fires": (
             "GraphQL introspection query {__schema}, OpenAPI/Swagger probing, "
             ".env discovery, /api/docs enumeration. Bot score: 5/100."
@@ -360,7 +360,7 @@ PHASES = [
             "and injection attacks on NovaMind API."
         ),
         "mitre_technique": "T1552.001 — Unsecured Credentials: Credentials In Files + T1212 Credential Access Exploit",
-        "target_route": "novamind-api /api/v1/admin, /api/v1/users",
+        "target_route": "acmecorp-api /api/v1/admin, /api/v1/users",
         "what_fires": (
             "GET /api/v1/admin, GET /api/v1/config, SQLi on /api/v1/users?include=, "
             "X-Internal-Token header probing. Multiple 403s."
@@ -388,7 +388,7 @@ PHASES = [
             "management endpoints."
         ),
         "mitre_technique": "T1548 — Abuse Elevation Control Mechanism + T1550.001 Use Alternate Authentication Material",
-        "target_route": "novamind-api /api/v1/admin, /oauth/token",
+        "target_route": "acmecorp-api /api/v1/admin, /oauth/token",
         "what_fires": (
             "POST /api/v1/admin with role manipulation, /admin/impersonate probing, "
             "JWT token forgery (alg:none), OAuth abuse."
@@ -416,7 +416,7 @@ PHASES = [
             "tenant IDs on NovaMind training-data and billing."
         ),
         "mitre_technique": "T1078 — Valid Accounts: Cloud Accounts + T1190 Exploit Public-Facing Application (SQLi/IDOR)",
-        "target_route": "novamind-api /api/v1/training-data, /api/v1/billing",
+        "target_route": "acmecorp-api /api/v1/training-data, /api/v1/billing",
         "what_fires": (
             "Sequential GET /api/v1/training-data?tenant_id=2001→2050, IDOR via tenant_id param, "
             "SQLi on /api/v1/billing?tenant=. WAFSQLiAttackScore: 96."
@@ -444,7 +444,7 @@ PHASES = [
             "infrastructure compromise."
         ),
         "mitre_technique": "T1190 — Exploit Public-Facing Application (Log4Shell CVE-2021-44228)",
-        "target_route": "novamind-api /api/v1/users, /api/v1/training-data, /api/v1/admin",
+        "target_route": "acmecorp-api /api/v1/users, /api/v1/training-data, /api/v1/admin",
         "what_fires": (
             "CVE-2021-44228 in User-Agent, X-Request-ID, X-Forwarded-Host headers "
             "on Java backend endpoints."

@@ -77,7 +77,7 @@ async def run_scenario(websocket: WebSocket, scenario_id: str):
     config = json.loads(config_msg)
 
     env = os.environ.copy()
-    env["CLOUDFLARE_DOMAIN"] = config.get("domain", "novamind-lab.workers.dev")
+    env["CLOUDFLARE_DOMAIN"] = config.get("domain", "acmecorp-lab.workers.dev")
     if config.get("shop_url"):
         env["SHOP_URL_OVERRIDE"] = config["shop_url"]
     if config.get("portal_url"):
@@ -233,7 +233,7 @@ async def campaign_stop():
 @app.post("/api/campaign/clear-incident")
 async def campaign_clear_incident():
     """
-    Clear the NovaMind/Pyxis status page banner via signal_incident(False).
+    Clear the AcmeCorp/Pyxis status page banner via signal_incident(False).
     Idempotent — safe to call even when no campaign is running.
     Response: {cleared:true}
     """

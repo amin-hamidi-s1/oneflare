@@ -234,8 +234,8 @@ export default function Settings() {
             fieldKey="cf_domain"
             value={settings.cf_domain}
             onChange={handleChange}
-            placeholder="novamind-lab.workers.dev"
-            note="Used to construct default target URLs. Example: novamind-lab.workers.dev"
+            placeholder="acmecorp-lab.workers.dev"
+            note="Used to construct default target URLs. Example: acmecorp-lab.workers.dev"
           />
 
           <Field
@@ -247,7 +247,7 @@ export default function Settings() {
             note={
               <>
                 Required for the DNS tunnel scenario to log in Gateway.{' '}
-                Go to <strong className="text-slate-300">one.dash.cloudflare.com → Zero Trust → Settings → General</strong> and find your <strong className="text-slate-300">Team domain</strong> (e.g. <span className="font-mono">novamind.cloudflareaccess.com</span>).
+                Go to <strong className="text-slate-300">one.dash.cloudflare.com → Zero Trust → Settings → General</strong> and find your <strong className="text-slate-300">Team domain</strong> (e.g. <span className="font-mono">acmecorp.cloudflareaccess.com</span>).
                 {' '}Your DoH URL is <span className="font-mono">https://&lt;team-domain&gt;/dns-query</span> — no location setup needed.
               </>
             }
@@ -295,21 +295,21 @@ export default function Settings() {
             fieldKey="shop_url"
             value={settings.shop_url}
             onChange={handleChange}
-            placeholder={`https://shop.${settings.cf_domain || 'novamind-lab.workers.dev'}`}
+            placeholder={`https://shop.${settings.cf_domain || 'acmecorp-lab.workers.dev'}`}
           />
           <Field
             label="Portal URL"
             fieldKey="portal_url"
             value={settings.portal_url}
             onChange={handleChange}
-            placeholder={`https://portal.${settings.cf_domain || 'novamind-lab.workers.dev'}`}
+            placeholder={`https://portal.${settings.cf_domain || 'acmecorp-lab.workers.dev'}`}
           />
           <Field
             label="API URL"
             fieldKey="api_url"
             value={settings.api_url}
             onChange={handleChange}
-            placeholder={`https://api.${settings.cf_domain || 'novamind-lab.workers.dev'}`}
+            placeholder={`https://api.${settings.cf_domain || 'acmecorp-lab.workers.dev'}`}
           />
         </div>
       </Section>

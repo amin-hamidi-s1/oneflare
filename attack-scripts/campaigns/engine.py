@@ -4,7 +4,7 @@ campaigns/engine.py — Shared HTTP sender for all drip-flow campaigns.
 Ported from cf-attack-sim-v2/attacks/engine.py and repointed at NovaMind
 infrastructure. Import this module; do not invoke via subprocess.
 
-AUTHORIZED LAB USE ONLY — targets are NovaMind workers on *.novamind-lab.workers.dev
+AUTHORIZED LAB USE ONLY — targets are NovaMind workers on *.acmecorp-lab.workers.dev
 (or a custom domain set via CLOUDFLARE_DOMAIN). Never target external hosts.
 """
 

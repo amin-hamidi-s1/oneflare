@@ -387,9 +387,9 @@ export default function ScenarioDetail() {
               <div className="space-y-2">
                 {[
                   { label: 'CF Domain', value: domain, required: true },
-                  { label: 'Shop URL', value: shopUrl, fallback: `https://shop.${domain || 'novamind.ai'}` },
-                  { label: 'Portal URL', value: portalUrl, fallback: `https://portal.${domain || 'novamind.ai'}` },
-                  { label: 'API URL', value: apiUrl, fallback: `https://api.${domain || 'novamind.ai'}` },
+                  { label: 'Shop URL', value: shopUrl, fallback: `https://shop.${domain || 'acmecorp.dev'}` },
+                  { label: 'Portal URL', value: portalUrl, fallback: `https://portal.${domain || 'acmecorp.dev'}` },
+                  { label: 'API URL', value: apiUrl, fallback: `https://api.${domain || 'acmecorp.dev'}` },
                 ].map(({ label, value, required, fallback }) => (
                   <div key={label} className="flex items-center gap-3">
                     <span className="text-xs text-slate-500 w-24 shrink-0">{label}</span>

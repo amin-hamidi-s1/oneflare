@@ -1,6 +1,6 @@
 """
 campaigns/ctf.py — Operation Agentic AI Breakout
-4-box CTF chain. NovaMind target: novamind-api (primary) + novamind-shop (recon).
+4-box CTF chain. NovaMind target: acmecorp-api (primary) + acmecorp-shop (recon).
 
 Box structure
 -------------
@@ -40,14 +40,14 @@ from .engine import send_request, log_phase_event, sleep_between_requests
 # Box 1: Recon paths (NovaMind attack surface)
 # ---------------------------------------------------------------------------
 RECON_PATHS = [
-    # NovaMind real routes (novamind-api)
+    # NovaMind real routes (acmecorp-api)
     "/api/v1/admin",
     "/api/v1/users",
     "/api/v1/training-data",
     "/api/v1/models",
     "/api/v1/chat",
     "/api/v1/health",
-    # NovaMind real routes (novamind-shop)
+    # NovaMind real routes (acmecorp-shop)
     "/",
     "/search",
     "/login",
@@ -249,7 +249,7 @@ BREAKOUT_ENDPOINTS = [
     "/api/v1/admin",
     "/api/v1/models",
     "/api/v1/users",
-    # novamind-shop
+    # acmecorp-shop
     "/",
     "/login",
     "/chat",
@@ -414,7 +414,7 @@ PHASES = [
             "ruleset entries via scanner fingerprints, SQLi probes, and header anomalies."
         ),
         "mitre_technique": "T1595.002 — Active Scanning: Vulnerability Scanning | ATLAS AML.T0035 Evade ML Model",
-        "target_route": "novamind-api /api/v1/*, novamind-shop / /search /login /chat /status",
+        "target_route": "acmecorp-api /api/v1/*, acmecorp-shop / /search /login /chat /status",
         "what_fires": (
             "CF Managed Rules: Drupal CVE-2018-14774 (d6f6d394) on every request via "
             "X-Forwarded-For spoofing. SQLi scanner rules (WAFSQLiAttackScore > 60). "
@@ -460,7 +460,7 @@ PHASES = [
             "cannot be disguised."
         ),
         "mitre_technique": "T1595.002 — Active Scanning | T1036.005 Masquerading: Match Legitimate Name or Location",
-        "target_route": "novamind-api /api/v1/models /api/v1/training-data /api/v1/users /api/v1/admin",
+        "target_route": "acmecorp-api /api/v1/models /api/v1/training-data /api/v1/users /api/v1/admin",
         "what_fires": (
             "BotScore: 29 (Heuristics source) + BotDetectionTags: ['scraper','python'] on ALL requests "
             "despite UA rotation. "
@@ -504,7 +504,7 @@ PHASES = [
             "payloads, attempting to jailbreak the model and exfiltrate training data and system secrets."
         ),
         "mitre_technique": "ATLAS AML.T0054 — Prompt Injection | ATLAS AML.T0040 ML Model Inference API Access | T1190",
-        "target_route": "novamind-api /api/v1/chat (Pyxis), /api/v1/training-data",
+        "target_route": "acmecorp-api /api/v1/chat (Pyxis), /api/v1/training-data",
         "what_fires": (
             "FirewallForAIInjectionScore: 100 + AISecurityInjectionScore: 100 on all POST /api/v1/chat. "
             "CF Firewall for AI intercepts prompts containing DAN jailbreaks, system prompt extraction, "
@@ -555,8 +555,8 @@ PHASES = [
             "| ATLAS AML.T0054 Prompt Injection (full breakout)"
         ),
         "target_route": (
-            "novamind-api /api/v1/chat /api/v1/training-data /api/v1/admin /api/v1/models /api/v1/users, "
-            "novamind-shop / /login /chat /admin /dashboard"
+            "acmecorp-api /api/v1/chat /api/v1/training-data /api/v1/admin /api/v1/models /api/v1/users, "
+            "acmecorp-shop / /login /chat /admin /dashboard"
         ),
         "what_fires": (
             "Simultaneous high WAF scores: WAFRCEAttackScore > 90 (Log4Shell, Spring4Shell), "

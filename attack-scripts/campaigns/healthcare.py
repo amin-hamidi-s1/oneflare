@@ -1,6 +1,6 @@
 """
 campaigns/healthcare.py — Operation HIPAA Breach
-5-phase attack chain. NovaMind target: novamind-api + novamind-portal.
+5-phase attack chain. NovaMind target: acmecorp-api + acmecorp-portal.
 
 MITRE ATT&CK mapping
 --------------------
@@ -27,13 +27,13 @@ from .engine import send_request, log_phase_event, sleep_between_requests
 # Recon paths: NovaMind API routes first, then healthcare-specific paths
 # that still generate WAF/bot-score signal even without a matching worker route.
 RECON_PATHS = [
-    # NovaMind real routes (novamind-api)
+    # NovaMind real routes (acmecorp-api)
     "/api/v1/admin",
     "/api/v1/users",
     "/api/v1/customers",
     "/api/v1/training-data",
     "/api/v1/health",
-    # NovaMind real routes (novamind-portal)
+    # NovaMind real routes (acmecorp-portal)
     "/login",
     "/dashboard",
     "/admin",
@@ -289,7 +289,7 @@ PHASES = [
             "Attacker mapping patient portal, EHR system, and FHIR API endpoints."
         ),
         "mitre_technique": "T1595.002 — Active Scanning: Vulnerability Scanning",
-        "target_route": "novamind-api /api/v1/*, novamind-portal /login /dashboard",
+        "target_route": "acmecorp-api /api/v1/*, acmecorp-portal /login /dashboard",
         "what_fires": (
             "FHIR endpoint discovery, patient portal probing, HL7 interface scanning, "
             ".well-known/smart-configuration. Bot score 3/100."
@@ -316,7 +316,7 @@ PHASES = [
             "Attacker probing patient records API with sequential patient IDs to map PHI availability."
         ),
         "mitre_technique": "T1595.001 — Active Scanning / T1592.002 Gather Victim Network Info",
-        "target_route": "novamind-api /api/fhir/Patient/:id, /portal/patient-search",
+        "target_route": "acmecorp-api /api/fhir/Patient/:id, /portal/patient-search",
         "what_fires": (
             "Sequential GET /api/fhir/Patient/1001→1050, "
             "/portal/patient-search?name=Smith (surname enumeration)."
@@ -343,7 +343,7 @@ PHASES = [
             "Targeted credential stuffing against EHR system login with staff naming patterns."
         ),
         "mitre_technique": "T1110.004 — Brute Force: Credential Stuffing",
-        "target_route": "novamind-portal /login, novamind-api /api/v1/auth/login",
+        "target_route": "acmecorp-portal /login, acmecorp-api /api/v1/auth/login",
         "what_fires": (
             "POST /portal/login with healthcare staff usernames (dr.johnson, nurse.smith), "
             "hospital password patterns. Distributed across multiple IPs."
@@ -370,7 +370,7 @@ PHASES = [
             "SQL injection attack attempting bulk patient PHI extraction (SSN, DOB, diagnosis)."
         ),
         "mitre_technique": "T1190 — Exploit Public-Facing Application (SQLi)",
-        "target_route": "novamind-api /api/v1/patients, /portal/patient-search",
+        "target_route": "acmecorp-api /api/v1/patients, /portal/patient-search",
         "what_fires": (
             "SQLi on /portal/patient-search (UNION SELECT ssn,dob,diagnosis), "
             "POST /api/lab-results with injection. WAFSQLiAttackScore: 97."
@@ -398,7 +398,7 @@ PHASES = [
             "for complete PHI database access."
         ),
         "mitre_technique": "T1190 — Exploit Public-Facing Application (Spring4Shell CVE-2022-22965)",
-        "target_route": "novamind-api /api/fhir/Patient (recon signal)",
+        "target_route": "acmecorp-api /api/fhir/Patient (recon signal)",
         "what_fires": (
             "CVE-2022-22965 Spring4Shell in User-Agent + X-Api-Version headers "
             "on /api/fhir/Patient endpoint."

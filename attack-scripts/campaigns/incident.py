@@ -1,7 +1,7 @@
 """
 campaigns/incident.py — Incident webhook helper for NovaMind status page.
 
-Posts to OUR novamind-api /api/incident endpoint using the INCIDENT_KEY env var.
+Posts to OUR acmecorp-api /api/incident endpoint using the INCIDENT_KEY env var.
 The target URL is built from config.py — never an external host.
 
 Usage (from backend engine or campaign code):
@@ -38,7 +38,7 @@ def signal_incident(
     timeout: int = 8,
 ) -> bool:
     """
-    POST to novamind-api /api/incident to set or clear the Pyxis status banner.
+    POST to acmecorp-api /api/incident to set or clear the Pyxis status banner.
 
     Parameters
     ----------
@@ -61,7 +61,7 @@ def signal_incident(
 
     target = f"{API_URL}/api/incident"
 
-    # Field shape MUST match novamind-api POST /api/incident, which authenticates
+    # Field shape MUST match acmecorp-api POST /api/incident, which authenticates
     # via the body field `key` (data.key === env.INCIDENT_KEY) and reads
     # `affected_services` + `started_at`. See cloudflare/workers/api/src/index.js.
     import datetime

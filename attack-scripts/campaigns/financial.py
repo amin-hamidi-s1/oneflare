@@ -1,6 +1,6 @@
 """
 campaigns/financial.py — Operation Wire Fraud
-5-phase attack chain. NovaMind target: novamind-api + novamind-shop.
+5-phase attack chain. NovaMind target: acmecorp-api + acmecorp-shop.
 
 MITRE ATT&CK mapping
 --------------------
@@ -26,14 +26,14 @@ from .engine import send_request, log_phase_event, sleep_between_requests
 # Recon paths repointed to NovaMind routes where they exist, supplemented
 # with legacy financial paths that still yield WAF/recon signal.
 RECON_PATHS = [
-    # NovaMind real routes (novamind-api)
+    # NovaMind real routes (acmecorp-api)
     "/api/v1/admin",
     "/api/v1/customers",
     "/api/v1/customers/export",
     "/api/v1/orders",
     "/api/v1/auth/login",
     "/api/v1/health",
-    # NovaMind real routes (novamind-shop)
+    # NovaMind real routes (acmecorp-shop)
     "/search",
     "/login",
     "/checkout",
@@ -291,7 +291,7 @@ PHASES = [
             "exposed endpoints using scanner fingerprints."
         ),
         "mitre_technique": "T1595.002 — Active Scanning: Vulnerability Scanning",
-        "target_route": "novamind-api /api/v1/customers, novamind-shop /search /login",
+        "target_route": "acmecorp-api /api/v1/customers, acmecorp-shop /search /login",
         "what_fires": (
             "Path traversal to financial endpoints, scanner User-Agents (sqlmap, Nmap, Nikto), "
             "admin panel probing. Cloudflare BotScore < 10."
@@ -317,7 +317,7 @@ PHASES = [
             "Attacker probing customer IDs and emails via /api/v1/customers to build target list."
         ),
         "mitre_technique": "T1595.001 — Active Scanning: Scanning IP Blocks / T1592 Gather Victim Host Info",
-        "target_route": "novamind-api /api/v1/customers/:id, /api/v1/customers?email=",
+        "target_route": "acmecorp-api /api/v1/customers/:id, /api/v1/customers?email=",
         "what_fires": (
             "Sequential GET /api/v1/customers/10001→10050, customer email probing. "
             "Unusual sequential API access pattern."
@@ -345,7 +345,7 @@ PHASES = [
             "with leaked credentials."
         ),
         "mitre_technique": "T1110.004 — Brute Force: Credential Stuffing",
-        "target_route": "novamind-api /api/v1/auth/login, novamind-shop /login",
+        "target_route": "acmecorp-api /api/v1/auth/login, acmecorp-shop /login",
         "what_fires": (
             "POST /api/v1/auth/login with credential pairs, rotating FAKE_IPS per request. "
             "Distributed botnet pattern across 8+ IPs."
@@ -373,7 +373,7 @@ PHASES = [
             "with SQL injection."
         ),
         "mitre_technique": "T1190 — Exploit Public-Facing Application (SQLi)",
-        "target_route": "novamind-api /api/v1/orders, /api/v1/customers/export",
+        "target_route": "acmecorp-api /api/v1/orders, /api/v1/customers/export",
         "what_fires": (
             "POST /api/wire-transfer with SQLi in amount field, "
             "GET /api/v1/customers/export with injection. WAFSQLiAttackScore: 99."
@@ -401,7 +401,7 @@ PHASES = [
             "(SWIFT endpoint) via header injection."
         ),
         "mitre_technique": "T1190 — Exploit Public-Facing Application (Log4Shell CVE-2021-44228)",
-        "target_route": "/swift/payment (recon signal on novamind-api)",
+        "target_route": "/swift/payment (recon signal on acmecorp-api)",
         "what_fires": (
             "CVE-2021-44228 Log4Shell strings in User-Agent + X-Api-Version headers "
             "targeting /swift/payment."
