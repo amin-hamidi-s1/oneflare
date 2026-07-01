@@ -1,20 +1,22 @@
-# Secrets — never commit
+# ── Credentials & secrets — never commit ─────────────────────────────
 .env
 .env.*
 !.env.example
+.dev.vars          # Cloudflare Workers local secrets
+**/.dev.vars
 
-# Wrangler cache (contains real account IDs)
+# Wrangler cache contains real account IDs (credentials)
 .wrangler/
 **/.wrangler/
 
-# Dependencies
+# ── Regenerable artifacts (not settings/instructions) ────────────────
 node_modules/
+__pycache__/
+*.pyc
+lab-ui/frontend/dist/
 
-# OS
+# ── OS junk ──────────────────────────────────────────────────────────
 .DS_Store
 
-# Claude local tooling
-.claude/
-
-# Local working files
-tasks/
+# Everything else — agents, rules, skills (.claude/), tasks/, and the
+# vendored S1 reference (reference/) — IS tracked and pushed to git.
