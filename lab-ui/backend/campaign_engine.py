@@ -295,11 +295,14 @@ def get_campaigns_meta() -> dict:
             phases_meta.append(phase_copy)
 
         result[key] = {
+            "key":         key,
             "name":        campaign["name"],
             "campaign":    campaign["campaign"],
+            "description": campaign.get("description", ""),
             "color":       campaign["color"],
             "icon":        campaign["icon"],
             "target_role": campaign["target_role"],
+            "target":      _resolve_target(key),
             "num_phases":  campaign["num_phases"],
             "phases":      phases_meta,
         }

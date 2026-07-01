@@ -21,8 +21,9 @@ CAMPAIGNS = {
     "financial": {
         "name":        "Operation Wire Fraud",
         "campaign":    "Financial Services",
+        "description": "Sophisticated threat actor targeting Meridian Bank's online banking platform to intercept wire transfers.",
         "color":       "#1a5276",
-        "icon":        "bank",
+        "icon":        "🏦",
         "target_role": "api",          # primary target: acmecorp-api
         "PHASES":      _FINANCIAL_PHASES,
         "num_phases":  len(_FINANCIAL_PHASES),
@@ -30,8 +31,9 @@ CAMPAIGNS = {
     "healthcare": {
         "name":        "Operation HIPAA Breach",
         "campaign":    "Healthcare",
+        "description": "Criminal group targeting MedCore Health Systems to steal patient PHI for sale on the dark web.",
         "color":       "#1e8449",
-        "icon":        "health",
+        "icon":        "💊",
         "target_role": "api",          # primary target: acmecorp-api
         "PHASES":      _HEALTHCARE_PHASES,
         "num_phases":  len(_HEALTHCARE_PHASES),
@@ -39,8 +41,9 @@ CAMPAIGNS = {
     "saas": {
         "name":        "Operation Tenant Escape",
         "campaign":    "SaaS / Tech",
+        "description": "Competitor's hired group targeting CloudMatrix SaaS platform to steal customer tenant data and API keys.",
         "color":       "#6c3483",
-        "icon":        "cloud",
+        "icon":        "☁️",
         "target_role": "api",          # primary target: acmecorp-api
         "PHASES":      _SAAS_PHASES,
         "num_phases":  len(_SAAS_PHASES),
@@ -48,8 +51,9 @@ CAMPAIGNS = {
     "ctf": {
         "name":        "Operation Agentic AI Breakout",
         "campaign":    "OneFlare CTF",
+        "description": "A rogue Pyxis AI agent attacks NovaMind across 4 escalating boxes — edge recon, polymorphic bot, prompt injection, and a full multi-vector breakout.",
         "color":       "#7c2d12",
-        "icon":        "brain",
+        "icon":        "🧠",
         "target_role": "api",          # primary: acmecorp-api (/api/v1/chat etc.)
         "PHASES":      _CTF_PHASES,
         "num_phases":  len(_CTF_PHASES),

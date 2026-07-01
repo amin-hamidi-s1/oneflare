@@ -630,7 +630,13 @@ export default function ThreatOps() {
     fetch('/api/campaigns')
       .then(r => r.json())
       .then(data => {
-        setCampaigns(Array.isArray(data) ? data : [])
+        // Backend returns a dict { key: {...} }; normalize to an array with `key`.
+        const arr = Array.isArray(data)
+          ? data
+          : Object.entries(data || {})
+              .filter(([k]) => k !== '_error')
+              .map(([key, v]) => ({ key, ...v }))
+        setCampaigns(arr)
       })
       .catch(() => setCampaigns([]))
       .finally(() => setLoadingCampaigns(false))
