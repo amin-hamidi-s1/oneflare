@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Swords, Play, Square, Trash2, RefreshCw,
   Radio, Moon, Shield, Bot,
@@ -582,15 +583,21 @@ function ControlsPanel({
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function ThreatOps() {
+  const [searchParams] = useSearchParams()
+
   // ── Tab state ────────────────────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState('ctf') // default: CTF is higher priority
+  // Respect ?tab= query param: 'ctf' → CTF tab, 'industry' → Industry tab
+  const initialTab = searchParams.get('tab') === 'industry' ? 'industry' : 'ctf'
+  const [activeTab, setActiveTab] = useState(initialTab)
 
   // ── Campaign data from API ────────────────────────────────────────────────
   const [campaigns, setCampaigns] = useState([])
   const [loadingCampaigns, setLoadingCampaigns] = useState(true)
 
   // ── Industry tab state ────────────────────────────────────────────────────
-  const [selectedIndustry, setSelectedIndustry] = useState('financial')
+  // Respect ?campaign= query param for preselection (financial/healthcare/saas)
+  const initialCampaign = searchParams.get('campaign') || 'financial'
+  const [selectedIndustry, setSelectedIndustry] = useState(initialCampaign)
   const [indMode, setIndMode]   = useState('preseed')
   const [indPhase, setIndPhase] = useState('all')
   const [indVolume, setIndVolume] = useState('medium')

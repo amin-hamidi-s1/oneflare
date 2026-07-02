@@ -102,7 +102,7 @@ export default function ScenarioDetail() {
       <div className="page-enter flex flex-col items-center justify-center py-20 gap-4">
         <AlertTriangle className="w-10 h-10 text-orange-400" />
         <p className="text-slate-300">Scenario not found: <span className="font-mono text-orange-400">{id}</span></p>
-        <button onClick={() => navigate('/')} className="btn-ghost">Back to Dashboard</button>
+        <button onClick={() => navigate('/scenarios')} className="btn-ghost">Back to Scenarios</button>
       </div>
     )
   }
@@ -182,11 +182,11 @@ export default function ScenarioDetail() {
       {/* Breadcrumb + nav */}
       <div className="flex items-center justify-between">
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/scenarios')}
           className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Dashboard
+          Back to Scenarios
         </button>
         <div className="flex items-center gap-2">
           {prevScenario && (

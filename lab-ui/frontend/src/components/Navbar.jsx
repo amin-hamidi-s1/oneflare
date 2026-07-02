@@ -1,25 +1,16 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
-  History,
-  ShieldAlert,
   Network,
   Settings,
   Flame,
-  FileCode,
-  Swords,
+  Target,
 } from 'lucide-react'
 
-const LAB_ITEMS = [
+const NAV_ITEMS = [
   { to: '/',             label: 'Dashboard',    icon: LayoutDashboard },
-  { to: '/detections',  label: 'Detections',   icon: ShieldAlert },
-  { to: '/history',     label: 'History',      icon: History },
-  { to: '/architecture',label: 'Architecture', icon: Network },
-  { to: '/parsers',     label: 'Parsers',      icon: FileCode },
-]
-
-const THREATOPS_ITEMS = [
-  { to: '/threatops',   label: 'Campaigns',    icon: Swords },
+  { to: '/scenarios',    label: 'Scenarios',    icon: Target },
+  { to: '/architecture', label: 'Architecture', icon: Network },
 ]
 
 function NavItem({ to, label, icon: Icon, location }) {
@@ -66,36 +57,16 @@ export default function Navbar() {
           </span>
         </NavLink>
 
-        {/* Nav clusters — scroll (never overlap) if the row is too narrow */}
+        {/* Nav items — scroll (never overlap) if the row is too narrow */}
         <div className="flex items-center gap-0.5 flex-1 min-w-0 overflow-x-auto no-scrollbar">
-
-          {/* Cluster: Lab Scenarios */}
           <div className="flex items-center gap-0.5 shrink-0">
-            <span className="hidden xl:inline text-[10px] font-mono font-semibold text-slate-600 uppercase tracking-widest px-2 whitespace-nowrap select-none shrink-0">
-              Lab Scenarios
-            </span>
-            {LAB_ITEMS.map((item) => (
-              <NavItem key={item.to} {...item} location={location} />
-            ))}
-          </div>
-
-          {/* Divider */}
-          <div className="hidden md:flex items-center mx-2 shrink-0" aria-hidden="true">
-            <div className="w-px h-5 bg-slate-700/60" />
-          </div>
-
-          {/* Cluster: ThreatOps */}
-          <div className="flex items-center gap-0.5 shrink-0">
-            <span className="hidden xl:inline text-[10px] font-mono font-semibold text-purple-500/70 uppercase tracking-widest px-2 whitespace-nowrap select-none shrink-0">
-              ThreatOps
-            </span>
-            {THREATOPS_ITEMS.map((item) => (
+            {NAV_ITEMS.map((item) => (
               <NavItem key={item.to} {...item} location={location} />
             ))}
           </div>
         </div>
 
-        {/* Settings (global, right-anchored) */}
+        {/* Settings — right-anchored */}
         <NavLink
           to="/settings"
           className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 shrink-0 ${
