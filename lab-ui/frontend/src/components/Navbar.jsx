@@ -3,7 +3,6 @@ import {
   LayoutDashboard,
   Network,
   Settings,
-  Flame,
   Target,
 } from 'lucide-react'
 
@@ -44,10 +43,11 @@ export default function Navbar() {
       <div className="max-w-screen-xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-4">
         {/* Logo */}
         <NavLink to="/" className="flex items-center gap-2 shrink-0 group">
-          <div className="relative flex items-center justify-center w-8 h-8">
-            <div className="absolute inset-0 bg-orange-500/20 rounded-lg blur-sm group-hover:bg-orange-500/30 transition-all" />
-            <Flame className="relative w-5 h-5 text-orange-400" strokeWidth={2.5} />
-          </div>
+          <img
+            src="/logo.png"
+            alt="OneFlare"
+            className="h-8 w-auto shrink-0 transition-transform group-hover:scale-105"
+          />
           <span className="font-bold text-lg tracking-tight">
             <span className="gradient-text-orange">One</span>
             <span className="text-slate-100">Flare</span>
