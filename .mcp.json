@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "cloudflare": {
+      "type": "http",
+      "url": "https://mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-containers": {
+      "type": "http",
+      "url": "https://containers.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-workers-bindings": {
+      "type": "http",
+      "url": "https://bindings.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-logpush": {
+      "type": "http",
+      "url": "https://logs.mcp.cloudflare.com/mcp"
+    }
+  }
+}

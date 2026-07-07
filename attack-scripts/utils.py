@@ -122,5 +122,10 @@ class SessionLog:
             "passed": sum(1 for e in self.entries if e["status"] == 200),
             "entries": self.entries,
         }
-        self.path.write_text(json.dumps(data, indent=2))
-        console.print(f"[dim]  Log saved → {self.path}[/dim]")
+        try:
+            self.path.write_text(json.dumps(data, indent=2))
+            console.print(f"[dim]  Log saved → {self.path}[/dim]")
+        except OSError as exc:
+            # Non-persistent/read-only filesystem (e.g. a container with no
+            # attached volume) — don't crash the run over a log write.
+            console.print(f"[dim yellow]  Log not persisted ({exc}) — continuing[/dim yellow]")

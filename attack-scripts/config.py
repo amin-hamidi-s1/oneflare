@@ -34,9 +34,15 @@ DNS_C2_DOMAIN = "c2tunnel.acmecorp-lab.workers.dev"
 # Incident webhook — campaigns/incident.py posts to this endpoint
 INCIDENT_KEY = os.getenv("INCIDENT_KEY", "")
 
-# Logs output directory
+# Logs output directory — best-effort. On ephemeral/read-only container
+# filesystems (e.g. Cloudflare Containers with no persistent volume) this
+# must never crash the app at import time; SessionLog.save() also guards
+# each write independently.
 LOGS_DIR = Path(__file__).parent / "logs"
-LOGS_DIR.mkdir(exist_ok=True)
+try:
+    LOGS_DIR.mkdir(exist_ok=True)
+except OSError:
+    pass
 
 # Cloudflare Gateway DoH endpoint for the lab's Zero Trust location.
 # Find it at: one.dash.cloudflare.com → Networks → Resolvers & Proxies → DNS locations
@@ -45,4 +51,27 @@ LOGS_DIR.mkdir(exist_ok=True)
 # IMPORTANT: use the hex-subdomain URL, NOT your team name — the team-name URL
 #            resolves DNS but does not log queries to Gateway activity or Logpush.
 # Without this set, DNS queries bypass Gateway entirely — no logs will appear.
-CF_GATEWAY_DOH_URL = os.getenv("CF_GATEWAY_DOH_URL", "")
+def _normalize_doh_url(raw: str) -> str:
+    """Return a usable DoH endpoint from whatever the user pasted.
+
+    httpx rejects a URL with no scheme ("Request URL is missing an
+    'http://' or 'https://' protocol"), and a Cloudflare Gateway DoH
+    endpoint lives at the /dns-query path. Accept a bare host
+    ("team.cloudflareaccess.com"), a host+path, or a full URL and coerce
+    it to "https://<host>/dns-query" so the scenario never crashes on a
+    slightly-off value from .env.local or the Settings UI.
+    """
+    from urllib.parse import urlparse
+
+    url = (raw or "").strip()
+    if not url:
+        return ""
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
+    parsed = urlparse(url)
+    if parsed.path in ("", "/"):
+        url = url.rstrip("/") + "/dns-query"
+    return url
+
+
+CF_GATEWAY_DOH_URL = _normalize_doh_url(os.getenv("CF_GATEWAY_DOH_URL", ""))

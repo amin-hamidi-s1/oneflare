@@ -89,8 +89,10 @@ def run() -> dict:
     else:
         console.print("[bold red]✗ CF_GATEWAY_DOH_URL not set[/bold red]")
         console.print("[yellow]Falling back to system resolver — queries will NOT appear in Gateway logs.[/yellow]")
-        console.print("[dim]Fix: Zero Trust → Gateway → Locations → create a location → copy its DoH URL")
-        console.print("     Add CF_GATEWAY_DOH_URL=https://<team>.cloudflareaccess.com/dns-query to .env.local[/dim]\n")
+        console.print("[dim]Fix: one.dash.cloudflare.com → Networks → Resolvers & Proxies → DNS locations")
+        console.print("     → [your location] → DNS over HTTPS → copy the hex-subdomain endpoint.")
+        console.print("     Set CF_GATEWAY_DOH_URL=https://<hex-id>.cloudflare-gateway.com/dns-query")
+        console.print("     (the <team>.cloudflareaccess.com URL resolves but does NOT log to Gateway)[/dim]\n")
         def query(fqdn, rdtype):
             return query_fallback(fqdn, rdtype)
 

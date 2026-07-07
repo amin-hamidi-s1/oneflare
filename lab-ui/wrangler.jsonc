@@ -1,0 +1,57 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // ThreatOps console UI (lab-ui/) — distinct from the 3 NovaMind attack Workers
+  // under cloudflare/workers/{shop,portal,api}.
+  "name": "novamind-lab-ui",
+  "main": "src/index.js",
+  "compatibility_date": "2025-01-01",
+
+  // Public custom domain. custom_domain:true makes Cloudflare create the proxied
+  // DNS record and provision the TLS cert for the apex automatically. The zone
+  // one-flare.com is active in this account. (To use www or a subdomain instead,
+  // change the pattern below and redeploy.)
+  "routes": [
+    { "pattern": "one-flare.com", "custom_domain": true }
+  ],
+  // Keep the *.workers.dev URL alive too, as a backup/testing URL alongside the
+  // custom domain (attaching a custom domain otherwise disables it by default).
+  "workers_dev": true,
+
+  // Frontend is a static SPA (Vite build output in frontend/dist) — served
+  // directly from Cloudflare's edge as static assets, NOT from a container.
+  // A static site does not belong in an nginx container: assets are faster,
+  // cheaper, and have no container cold-start/scheduling to fail. The Worker
+  // (src/index.js) runs first and routes /api + /ws to the backend container;
+  // everything else is served from these assets, with SPA fallback to
+  // index.html for client-side routes.
+  "assets": {
+    "directory": "./frontend/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": true
+  },
+
+  // Only the backend (FastAPI/uvicorn) needs a container.
+  "containers": [
+    {
+      "class_name": "Backend",
+      "image": "./backend/Dockerfile",
+      // Backend's Dockerfile COPYs the sibling ../attack-scripts directory in,
+      // so its build context must be the repo root, not lab-ui/backend/.
+      "image_build_context": "..",
+      "max_instances": 1,
+      "instance_type": "lite"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      { "name": "BACKEND", "class_name": "Backend" }
+    ]
+  },
+  "migrations": [
+    // v1 created both classes; v2 removes the now-unused Frontend class (the
+    // frontend moved to static assets above).
+    { "tag": "v1", "new_sqlite_classes": ["Frontend", "Backend"] },
+    { "tag": "v2", "deleted_classes": ["Frontend"] }
+  ]
+}

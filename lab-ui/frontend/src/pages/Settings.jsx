@@ -422,12 +422,12 @@ export default function Settings() {
             fieldKey="cf_gateway_doh_url"
             value={settings.cf_gateway_doh_url}
             onChange={handleChange}
-            placeholder="https://<team>.cloudflareaccess.com/dns-query"
+            placeholder="https://<hex-id>.cloudflare-gateway.com/dns-query"
             note={
               <>
                 Required for the DNS tunnel scenario to log in Gateway.{' '}
-                Go to <strong className="text-slate-300">one.dash.cloudflare.com → Zero Trust → Settings → General</strong> and find your <strong className="text-slate-300">Team domain</strong> (e.g. <span className="font-mono">acmecorp.cloudflareaccess.com</span>).
-                {' '}Your DoH URL is <span className="font-mono">https://&lt;team-domain&gt;/dns-query</span> — no location setup needed.
+                Go to <strong className="text-slate-300">one.dash.cloudflare.com → Networks → Resolvers &amp; Proxies → DNS locations → [your location] → DNS over HTTPS</strong> and copy the endpoint (a <strong className="text-slate-300">hex subdomain</strong>, e.g. <span className="font-mono">https://4a7f0b2c.cloudflare-gateway.com/dns-query</span>).
+                {' '}Use this location-specific URL — the <span className="font-mono">&lt;team&gt;.cloudflareaccess.com</span> team URL resolves DNS but does <strong className="text-slate-300">not</strong> log queries to Gateway activity or Logpush.
               </>
             }
           />

@@ -1,8 +1,9 @@
-# Never copy host-built artifacts into the image — they carry the host platform's
-# native binaries (e.g. macOS rollup) and break the Linux build. Let `npm install`
-# resolve the correct platform binaries inside the image.
+# node_modules carries the host platform's native binaries (e.g. macOS rollup)
+# and must never be copied into the Linux image.
 node_modules
-dist
 npm-debug.log*
 .vite
 .DS_Store
+
+# NOTE: dist/ is intentionally NOT ignored — the image copies the host-built
+# SPA output (static HTML/CSS/JS, no native binaries) directly. See Dockerfile.
