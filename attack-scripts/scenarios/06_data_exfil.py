@@ -17,13 +17,21 @@ def run() -> dict:
     log = SessionLog("06_data_exfil", LOGS_DIR)
     blocked = passed = 0
 
-    # Phase 1: Authenticate to get token
+    # Phase 1: Authenticate to get token.
+    # Use a clean browser User-Agent for the login: a real exfil actor with
+    # valid/stolen API creds authenticates through a normal client. random_headers()
+    # rotates in scanner UAs (sqlmap/Nikto/masscan) that the WAF managed ruleset 403s,
+    # which would abort the whole scenario before any exfil traffic is generated.
+    # The *suspicious* signal lives in Phases 2–3 (enumeration + bulk export volume),
+    # not in the login request.
+    BROWSER_UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                  "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
     console.print("\n[yellow]Phase 1: Authenticate to obtain API token[/yellow]")
     token = None
     try:
         r = requests.post(f"{API_URL}/api/v1/auth/login",
                           json={"username": API_USERNAME, "password": API_PASSWORD},
-                          headers=random_headers(), timeout=10)
+                          headers=random_headers({"User-Agent": BROWSER_UA}), timeout=10)
         if r.status_code == 200:
             token = r.json().get("token")
             console.print(f"  [green]AUTH OK[/green] — token: {token}")

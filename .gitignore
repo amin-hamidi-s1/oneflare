@@ -23,3 +23,6 @@ lab-ui/frontend/dist/
 
 # Local, environment-specific compose override (e.g. offline/host-built dist)
 lab-ui/docker-compose.override.yml
+
+# Local attack-simulation run logs (per-session JSON artifacts)
+attack-scripts/logs/

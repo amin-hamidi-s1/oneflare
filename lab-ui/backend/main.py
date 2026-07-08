@@ -77,7 +77,9 @@ async def run_scenario(websocket: WebSocket, scenario_id: str):
     config = json.loads(config_msg)
 
     env = os.environ.copy()
-    env["CLOUDFLARE_DOMAIN"] = config.get("domain", "acmecorp-lab.workers.dev")
+    # Default to the live attack surface; `or` also covers an empty-string domain
+    # sent by a browser whose Settings field was never filled in.
+    env["CLOUDFLARE_DOMAIN"] = config.get("domain") or "one-flare.com"
     if config.get("shop_url"):
         env["SHOP_URL_OVERRIDE"] = config["shop_url"]
     if config.get("portal_url"):

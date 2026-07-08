@@ -87,6 +87,25 @@ DNS tunneling scenario + campaigns: KEEP UNTOUCHED (per user).
 Key facts: one-flare zone id e5ccbf98fa13d1ce5de36d999ddf6720; account b8e637d5097fff0c694c3290ba81563e;
 S1 site OneFlare id 2433185103040607397. Only Gateway HTTP/DNS + ZT + Audit flow to S1 today.
 
+## Scenario repoint fixes (2026-07-08)
+- [x] #1 Cred stuffing repointed to one-flare.com. Root cause: `.env.local` had
+      `CLOUDFLARE_DOMAIN = us.sentinelone.cftenant.com` (that host has no shop/portal
+      subdomains → DNS fail). The script already reads SHOP_URL/PORTAL_URL from config;
+      config just derived them from the stale domain. Fixed .env.local → one-flare.com,
+      and hardened `config.py` (`os.getenv(...) or "one-flare.com"`) + backend
+      `main.py` (`config.get("domain") or "one-flare.com"`) to never collapse to
+      "https://shop." on an empty domain. Cred now POSTs shop/portal.one-flare.com/login → 401.
+      NOTE: the SHOP_URL_OVERRIDE/PORTAL_URL_OVERRIDE/API_URL_OVERRIDE env vars set by
+      main.py are NOT read by config.py (dead plumbing, harmless) — domain drives all URLs.
+      Advanced per-URL override fields in the Settings UI are therefore inert; leave blank.
+- [x] #2 Data exfil auth 403 fixed. Root cause: `random_headers()` rotates in scanner
+      UAs (sqlmap/Nikto/masscan) that the WAF managed ruleset 403s; when the Phase-1
+      auth login drew one, the script got no token and aborted. Fixed: auth login now
+      uses a clean browser UA (06_data_exfil.py). Verified end-to-end — AUTH OK, and
+      Phase 3 bulk export now returns 85KB (csv) / 217KB (json) bodies → the exfil
+      LARGE-RESPONSE detection branch (>100KB EdgeResponseBytes) can finally fire
+      (was maxed at 348 bytes / 401 before).
+
 ## Path A — DATA PATH COMPLETE (2026-07-07, later)
 - [x] HEC creds validated (S1_HEC_INGEST_URL 57ch, S1_HEC_INGEST_TOKEN 65ch) — read via python-dotenv (bash `source` chokes on file; use dotenv).
 - [x] Logpush jobs created on one-flare.com -> S1 HEC (reused validated dest, no re-ownership):

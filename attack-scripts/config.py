@@ -5,7 +5,11 @@ from dotenv import load_dotenv
 # Load .env.local from project root
 load_dotenv(Path(__file__).parent.parent / ".env.local")
 
-DOMAIN = os.getenv("CLOUDFLARE_DOMAIN", "acmecorp-lab.workers.dev")
+# one-flare.com is the live attack surface (shop/portal/api.one-flare.com are
+# Cloudflare-proxied with WAF + Bot Management + Logpush → S1). Guard against an
+# empty env value (the backend may pass CLOUDFLARE_DOMAIN="") so URLs never
+# collapse to "https://shop." — fall back to the live domain instead.
+DOMAIN = os.getenv("CLOUDFLARE_DOMAIN") or "one-flare.com"
 
 # Target URLs — workers.dev by default, auto-swaps when CLOUDFLARE_DOMAIN is a custom domain
 if "workers.dev" in DOMAIN:
