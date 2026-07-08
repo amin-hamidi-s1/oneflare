@@ -103,8 +103,24 @@ S1 site OneFlare id 2433185103040607397. Only Gateway HTTP/DNS + ZT + Audit flow
       auth login drew one, the script got no token and aborted. Fixed: auth login now
       uses a clean browser UA (06_data_exfil.py). Verified end-to-end — AUTH OK, and
       Phase 3 bulk export now returns 85KB (csv) / 217KB (json) bodies → the exfil
-      LARGE-RESPONSE detection branch (>100KB EdgeResponseBytes) can finally fire
-      (was maxed at 348 bytes / 401 before).
+      LARGE-RESPONSE detection branch fires (was maxed at 348 bytes / 401 before).
+- [x] CONFIRMED IN S1 (LRQ, last-60m window, class_uid 4002):
+      - Cred: /login → 89×401 + 17×403 (the failed-login signal is landing).
+      - Exfil: api.one-flare.com /customers/export → 10 reqs (9×200 + 1×403).
+      LRQ helper: scratchpad/run_lrq.py (body needs pq:{query,resultType:TABLE},
+      queryPriority; NOT top-level query — that 400s "Invalid JSON").
+- [ ] EXFIL DETECTION TUNING FINDING: `unmapped.EdgeResponseBytes` is the
+      *compressed* edge transfer size, so the 217KB JSON export records as only
+      ~50–85KB (max observed 85,458). The ">100KB EdgeResponseBytes" LARGE-RESPONSE
+      branch will NOT fire on real data — rely on the `sensitive_hits ≥ 10` volume
+      branch (one source made 10 /export hits) or lower the byte threshold to ~50KB.
+      scenarios.js exfil validationNote (says "returned 401, max 348 bytes") is now
+      STALE — update when re-validating the exfil detection.
+- [x] Verified http_requests field paths (one-flare.com zone): host =
+      `http_request.url.hostname`, path/query = `http_request.url.url_string`,
+      status = `unmapped.EdgeResponseStatus` (string), bytes =
+      `unmapped.EdgeResponseBytes` (string, compressed — cast with number()).
+      `unmapped.ClientRequestHost` is NULL — use http_request.url.hostname.
 
 ## Path A — DATA PATH COMPLETE (2026-07-07, later)
 - [x] HEC creds validated (S1_HEC_INGEST_URL 57ch, S1_HEC_INGEST_TOKEN 65ch) — read via python-dotenv (bash `source` chokes on file; use dotenv).
