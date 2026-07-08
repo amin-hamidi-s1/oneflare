@@ -38,7 +38,15 @@ PASSWORDS = (WORDLIST_DIR / "passwords.txt").read_text().splitlines()
 # DNS tunneling target — uses a domain we control to generate realistic C2-like queries
 DNS_C2_DOMAIN = "c2tunnel.acmecorp-lab.workers.dev"
 
-# Incident webhook — campaigns/incident.py posts to this endpoint
+# Incident webhook target — campaigns/incident.py posts here to flip a /status
+# page. The flagship "Agentic AI Breakout" CTF flips the api worker (Pyxis), so
+# INCIDENT_URL defaults to API_URL and existing behavior is unchanged. SoleDrop
+# shop runs flip the standalone SoleDrop worker instead (it owns its OWN
+# /api/incident + INCIDENT_KV) — use signal_shop_incident() which targets
+# SHOP_URL, or set INCIDENT_URL_OVERRIDE to repoint the default.
+INCIDENT_URL = os.getenv("INCIDENT_URL_OVERRIDE") or API_URL
+
+# Must equal the target worker's INCIDENT_KEY secret, or the POST returns 403.
 INCIDENT_KEY = os.getenv("INCIDENT_KEY", "")
 
 # Logs output directory — best-effort. On ephemeral/read-only container
