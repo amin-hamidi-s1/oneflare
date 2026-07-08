@@ -17,7 +17,8 @@
       "threshold": {
         "value": 0,
         "operator": "Greater"
-      }
+      },
+      "alertPerRow": true
     },
     "_entityMappings_pending_feature": [
       {
