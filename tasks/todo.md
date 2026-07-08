@@ -66,3 +66,35 @@ Not yet done: live runtime e2e + live deploys (deferred TODOs below; need creds)
 
 ## Review
 (filled after each wave)
+
+## Path A build — attack surface on one-flare.com (in progress 2026-07-07)
+
+Goal: real WAF/Bot/AI detection data by hosting attacks under one-flare.com (Enterprise,
+Bot Management provisioned) with HTTP requests + Firewall events Logpush → S1.
+
+Verified: Bot Management ON (one-flare.com), AI Gateway available (0 gateways), Firewall-for-AI NOT deployed.
+DNS tunneling scenario + campaigns: KEEP UNTOUCHED (per user).
+
+- [x] Bind custom domains: shop/portal/api.one-flare.com -> acmecorp-shop/portal/api workers (proxied). Verified 200.
+- [ ] BLOCKED: add S1_HEC_INGEST_URL + S1_HEC_INGEST_TOKEN to .env.local (not saved yet — file has 6 vars, no HEC)
+- [ ] Create Logpush jobs on one-flare.com zone (HTTP requests + Firewall events) -> S1 HEC (replicate existing dest)
+- [ ] Enable WAF managed rules (OWASP) on one-flare.com; flip bot_management ai_bots_protection
+- [ ] Create AI Gateway; route Pyxis chat through it (locate real chat endpoint — api.one-flare.com/api/v1/chat = 404)
+- [ ] New scenario scripts built: 07_ai_bot.py, 08_prompt_injection.py (committed c08b2a5) — repoint to *.one-flare.com
+- [ ] Revise scenarios 01/02/06 target URLs -> *.one-flare.com; author + live-validate detections to 0 FP
+- [ ] Deferred: deploy DNS-tunnel scheduled rule (blocked on tenant "Scheduled Detections" toggle)
+
+Key facts: one-flare zone id e5ccbf98fa13d1ce5de36d999ddf6720; account b8e637d5097fff0c694c3290ba81563e;
+S1 site OneFlare id 2433185103040607397. Only Gateway HTTP/DNS + ZT + Audit flow to S1 today.
+
+## Path A — DATA PATH COMPLETE (2026-07-07, later)
+- [x] HEC creds validated (S1_HEC_INGEST_URL 57ch, S1_HEC_INGEST_TOKEN 65ch) — read via python-dotenv (bash `source` chokes on file; use dotenv).
+- [x] Logpush jobs created on one-flare.com -> S1 HEC (reused validated dest, no re-ownership):
+      firewall_events job 1769148, http_requests job 1769149 (98 fields incl BotScore/JA/WAFAttackScore). Both enabled, healthy.
+- [x] WAF managed rules ACTIVE on one-flare.com (XSS/traversal/sqlmap -> 403 confirmed).
+- [x] Seeded real attack traffic (SQLi/XSS/traversal at shop.one-flare.com, bot probes at api.one-flare.com).
+- [ ] ai_bots_protection toggle blocked: token needs Bot Management **Edit** (has Read). Optional (scoring works regardless).
+- [ ] NEXT: verify seeded data lands in S1 SDL (query dataSource with one-flare.com host; ~few min Logpush propagation).
+- [ ] Author + live-validate detections (WAF attack score, polymorphic bot BotScore/JA4) to 0 FP.
+- [ ] Repoint scenario scripts 01/02/06/07/08 to *.one-flare.com (config override).
+- [ ] AI Gateway: create + route Pyxis chat (locate real chat endpoint).
