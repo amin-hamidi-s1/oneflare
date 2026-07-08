@@ -44,6 +44,8 @@ SCENARIO_SCRIPTS = {
     "cred":      "scenarios.04_cred_stuffing",
     "dns":       "scenarios.05_dns_tunnel",
     "exfil":     "scenarios.06_data_exfil",
+    "bot":       "scenarios.07_ai_bot",
+    "promptinj": "scenarios.08_prompt_injection",
     "all":       None,  # runs demo.py
 }
 

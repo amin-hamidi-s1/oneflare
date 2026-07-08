@@ -29,6 +29,8 @@ SCENARIOS = {
     "cred":          ("04 — Credential Stuffing",     "scenarios.04_cred_stuffing"),
     "dns":           ("05 — DNS Tunneling",            "scenarios.05_dns_tunnel"),
     "exfil":         ("06 — Data Exfiltration",       "scenarios.06_data_exfil"),
+    "bot":           ("07 — Polymorphic AI Bot",      "scenarios.07_ai_bot"),
+    "promptinj":     ("08 — Prompt Injection",        "scenarios.08_prompt_injection"),
 }
 
 

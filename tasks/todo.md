@@ -122,6 +122,29 @@ S1 site OneFlare id 2433185103040607397. Only Gateway HTTP/DNS + ZT + Audit flow
       `unmapped.EdgeResponseBytes` (string, compressed — cast with number()).
       `unmapped.ClientRequestHost` is NULL — use http_request.url.hostname.
 
+## #3 + #4 (2026-07-08)
+- [x] #3 Wired `bot` + `promptinj` into the backend runner. Added to
+      SCENARIO_SCRIPTS in lab-ui/backend/main.py (bot→scenarios.07_ai_bot,
+      promptinj→scenarios.08_prompt_injection) and to demo.py SCENARIOS (CLI "all").
+      Both run cleanly via `python -m scenarios.0{7,8}_*` (the exact backend invocation)
+      and generate edge traffic on api.one-flare.com: bot = 30 GETs (rotating UA,
+      constant JA4) to /models,/training-data,/users,/admin bait paths; promptinj =
+      16 POSTs to /api/v1/chat. NOTE: all return 404 — the acmecorp-api worker bound
+      to api.one-flare.com lacks those bait routes AND /api/v1/chat (the latter is #6).
+      404s still generate http_requests logs (the fallback volume/UA signal), so the
+      data path is intact; bot DETECTION needs #4 (Bot Mgmt fields), promptinj needs #6.
+- [ ] #4 BLOCKED on token permission. CLOUDFLARE_API_TOKEN can read the zone but
+      CANNOT read or edit Logpush jobs — GET /zones/{zone}/logpush/jobs → 403
+      "Authentication error" (code 10000). The token is missing the **Zone > Logs >
+      Edit** permission group for one-flare.com. Only one CF token in .env.local (no
+      global key). USER ACTION: add "Logs Edit" to the token (dash → My Profile → API
+      Tokens → edit CLOUDFLARE_API_TOKEN → add permission Zone · Logs · Edit, scoped
+      to one-flare.com), OR add the Bot Management fields to the http_requests job in
+      the dashboard (Analytics & Logs → Logpush → http_requests job → Configure fields).
+      Fields to ADD: BotScore, BotScoreSrc, BotTags, JA3Hash, JA4, JA4Signals,
+      VerifiedBotCategory, ClientRequestUserAgent (if not already present). Once Logs
+      Edit is granted I can PATCH job 1769149's output_options.field_names via API.
+
 ## Path A — DATA PATH COMPLETE (2026-07-07, later)
 - [x] HEC creds validated (S1_HEC_INGEST_URL 57ch, S1_HEC_INGEST_TOKEN 65ch) — read via python-dotenv (bash `source` chokes on file; use dotenv).
 - [x] Logpush jobs created on one-flare.com -> S1 HEC (reused validated dest, no re-ownership):
