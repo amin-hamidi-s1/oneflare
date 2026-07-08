@@ -1,0 +1,9 @@
+# node_modules carries the host platform's native binaries (e.g. macOS rollup)
+# and must never be copied into the Linux image.
+node_modules
+npm-debug.log*
+.vite
+.DS_Store
+
+# NOTE: dist/ is intentionally NOT ignored — the image copies the host-built
+# SPA output (static HTML/CSS/JS, no native binaries) directly. See Dockerfile.

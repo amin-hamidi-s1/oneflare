@@ -1,0 +1,34 @@
+# ── Credentials & secrets — never commit ─────────────────────────────
+.env
+.env.*
+!.env.example
+.dev.vars          # Cloudflare Workers local secrets
+**/.dev.vars
+
+# Wrangler cache contains real account IDs (credentials)
+.wrangler/
+**/.wrangler/
+
+# ── Regenerable artifacts (not settings/instructions) ────────────────
+node_modules/
+__pycache__/
+*.pyc
+lab-ui/frontend/dist/
+
+# ── OS junk ──────────────────────────────────────────────────────────
+.DS_Store
+
+# Everything else — agents, rules, skills (.claude/), tasks/, and the
+# vendored S1 reference (reference/) — IS tracked and pushed to git.
+
+# Local, environment-specific compose override (e.g. offline/host-built dist)
+lab-ui/docker-compose.override.yml
+
+# Local attack-simulation run logs (per-session JSON artifacts)
+attack-scripts/logs/
+
+# Internal tooling — never publish (kept only in the private working repo)
+reference/
+.claude/
+.mcp.json
+tasks/

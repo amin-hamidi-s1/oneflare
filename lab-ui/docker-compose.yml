@@ -1,0 +1,23 @@
+version: "3.9"
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../attack-scripts:/app/attack-scripts:ro
+      - attack_logs:/app/attack-scripts/logs
+      - ./backend:/app
+    environment:
+      - PYTHONPATH=/app/attack-scripts
+    working_dir: /app
+
+volumes:
+  attack_logs:

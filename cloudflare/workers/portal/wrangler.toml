@@ -1,0 +1,13 @@
+name = "novamind-portal"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+# KV namespace for incident state (read-only consumer)
+# Replace placeholder_id with real namespace ID before deploying to live CF
+[[kv_namespaces]]
+binding = "INCIDENT_KV"
+id = "placeholder_incident_kv_id"
+
+# Portal credentials — set via wrangler secrets, not here
+# wrangler secret put PORTAL_USERNAME
+# wrangler secret put PORTAL_PASSWORD

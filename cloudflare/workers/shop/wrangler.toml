@@ -1,0 +1,14 @@
+name = "novamind-shop"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+# KV namespace for incident state (shared read — api worker owns writes)
+# Replace placeholder_id with real namespace ID before deploying to live CF
+[[kv_namespaces]]
+binding = "INCIDENT_KV"
+id = "placeholder_incident_kv_id"
+
+# Pyxis LLM wiring stubs — set real values via wrangler secret or .dev.vars
+# [vars]
+# PYXIS_LLM_PROVIDER = ""   # e.g. "workers-ai" or "anthropic"
+# PYXIS_LLM_KEY = ""        # set via: wrangler secret put PYXIS_LLM_KEY

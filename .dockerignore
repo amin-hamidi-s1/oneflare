@@ -1,0 +1,35 @@
+# Root-level .dockerignore — scopes the Docker build context down when a
+# Dockerfile needs `image_build_context` set to the repo root (currently only
+# lab-ui/backend/Dockerfile, which also needs the sibling attack-scripts/ dir).
+# Keeps the context small; does not affect any other tooling.
+
+.git
+.github
+.claude
+reference
+docs
+detections
+hyperautomation
+parsers
+cloudflare
+tasks
+
+lab-ui/frontend
+lab-ui/deploy-test
+lab-ui/README.md
+lab-ui/docker-compose.yml
+lab-ui/docker-compose.override.yml
+
+attack-scripts/logs
+attack-scripts/README.md
+
+**/__pycache__
+**/node_modules
+**/.DS_Store
+.wrangler
+
+.env.local
+.env.example
+.mcp.json
+
+*.md
