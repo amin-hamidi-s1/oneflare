@@ -1,0 +1,32 @@
+name = "oneflare-logpush-relay"
+main = "src/index.js"
+compatibility_date = "2025-06-01"
+
+# KV namespace holding the multi-tenant registry: maps <slug>.lab.soledrop.co ->
+# { name, subdomain, s1_hec_url, s1_hec_token, status, created_at, forwarded, last_seen }.
+# Also stores the rolling audit/history log and unknown-host drop counters under
+# reserved "__"-prefixed keys ("__history__", "__unknown__:<host>") so a single
+# namespace covers both the tenant registry and its audit trail.
+# Replace placeholder_registry_kv_id with the real namespace ID before deploying.
+# Create with: wrangler kv namespace create REGISTRY
+[[kv_namespaces]]
+binding = "REGISTRY"
+id = "placeholder_registry_kv_id"
+
+# ── Secrets (set via `wrangler secret put <NAME>` — never committed) ─────────
+# LAB_ENROLL_CODE — shared enrollment code gating POST /register. Callers must
+#                    send it via the `X-Enroll-Code` header or a JSON
+#                    `enroll_code` field; mismatches return 403.
+#   wrangler secret put LAB_ENROLL_CODE
+#
+# ADMIN_TOKEN      — bearer token gating every /admin/* route. Callers must send
+#                    `Authorization: Bearer <token>` or `X-Admin-Token: <token>`;
+#                    missing/mismatched token returns 401.
+#   wrangler secret put ADMIN_TOKEN
+
+# Optional: rewrite each forwarded record's ClientRequestHost back to the
+# canonical shop.soledrop.co before it reaches the tenant's S1 HEC endpoint, so
+# their SentinelOne site sees a single pristine hostname instead of their
+# unique <slug>.lab.soledrop.co lab subdomain. Off by default.
+# [vars]
+# REWRITE_HOST = "true"
