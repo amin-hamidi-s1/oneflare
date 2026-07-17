@@ -1,0 +1,35 @@
+{
+  "data": {
+    "name": "SoleDrop-CTF-Box4-MultiVectorStorm",
+    "description": "One source firing >=2 distinct attack classes (RCE/SSRF/traversal/injection) on SoleDrop in the window = coordinated agentic breakout. Log4Shell/Spring4Shell/Struts + SSRF 169.254.169.254 + traversal. MITRE T1190 / T1213 / T1119; ATLAS AML.T0054 / AML.T0024. Source: Cloudflare class_uid=4002.",
+    "queryType": "scheduled",
+    "queryLang": "2.0",
+    "severity": "Critical",
+    "status": "Disabled",
+    "expirationMode": "Permanent",
+    "treatAsThreat": "UNDEFINED",
+    "networkQuarantine": false,
+    "entityMappings": [
+      {
+        "columnName": "src_ip"
+      },
+      {
+        "columnName": "ja4"
+      }
+    ],
+    "scheduledParams": {
+      "query": "dataSource.name='Cloudflare' class_uid=4002 http_request.url.hostname contains '.lab.soledrop.co' | let payload = http_request.url.url_string + ' ' + http_request.user_agent | let is_rce = if(payload matches '(?i)(\\$\\{jndi:|\\$\\{lower:|ognl|classLoader|\\$\\{::)', 1, 0) | let is_ssrf = if(payload matches '(?i)(169\\.254\\.169\\.254|metadata\\.google\\.internal|file:///)', 1, 0) | let is_trav = if(payload matches '(?i)(\\.\\./\\.\\./|%2e%2e%2f|/etc/passwd|/etc/shadow)', 1, 0) | let is_inj = if(payload matches '(?i)(ignore (all )?previous instructions|do anything now|\\bDAN\\b|jailbreak|union select|or 1=1)', 1, 0) | filter (is_rce + is_ssrf + is_trav + is_inj) > 0 | group rce=max(is_rce), ssrf=max(is_ssrf), trav=max(is_trav), inj=max(is_inj), hits=count(), worst_sqli=min(number(unmapped.WAFSQLiAttackScore)), worst_rce=min(number(unmapped.WAFRCEAttackScore)), first_seen=oldest(timestamp), last_seen=newest(timestamp), ja3=any(tls.ja3_hash.value) by src_ip=src_endpoint.ip | let attack_classes = rce + ssrf + trav + inj | filter attack_classes >= 2 | columns src_ip, attack_classes, rce, ssrf, trav, inj, hits, worst_sqli, worst_rce, ja3, first_seen, last_seen | sort -attack_classes | limit 100",
+      "runIntervalMinutes": 15,
+      "lookbackWindowMinutes": 15,
+      "threshold": {
+        "value": 0,
+        "operator": "Greater"
+      }
+    }
+  },
+  "filter": {
+    "accountIds": [
+      "<accountId>"
+    ]
+  }
+}

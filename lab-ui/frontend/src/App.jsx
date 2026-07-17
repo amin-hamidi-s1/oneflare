@@ -5,7 +5,7 @@ import Scenarios from './pages/Scenarios.jsx'
 import ScenarioDetail from './pages/ScenarioDetail.jsx'
 import ThreatOps from './pages/ThreatOps.jsx'
 import Architecture from './pages/Architecture.jsx'
-import KnowledgeObjects from './pages/KnowledgeObjects.jsx'
+import Assets from './pages/Assets.jsx'
 import Settings from './pages/Settings.jsx'
 import Admin from './pages/Admin.jsx'
 import AcceptInvite from './pages/AcceptInvite.jsx'
@@ -19,14 +19,15 @@ export default function App() {
         <Route path="/scenarios" element={<Scenarios />} />
         <Route path="/scenarios/:id" element={<ScenarioDetail />} />
         <Route path="/threatops" element={<ThreatOps />} />
+        <Route path="/assets" element={<Assets />} />
         <Route path="/architecture" element={<Architecture />} />
-        <Route path="/knowledge" element={<KnowledgeObjects />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/admin/accept-invite" element={<AcceptInvite />} />
         <Route path="/admin/accept-request" element={<AcceptRequest />} />
         {/* Redirects so old bookmarks don't 404 */}
-        <Route path="/detections" element={<Navigate to="/knowledge" replace />} />
+        <Route path="/knowledge" element={<Navigate to="/assets" replace />} />
+        <Route path="/detections" element={<Navigate to="/assets" replace />} />
         <Route path="/parsers" element={<Navigate to="/architecture" replace />} />
         <Route path="/history" element={<Navigate to="/settings" replace />} />
       </Routes>

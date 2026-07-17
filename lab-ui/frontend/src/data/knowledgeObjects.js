@@ -19,6 +19,17 @@ import botScraper from './detections/bot-scraper.rule.json'
 import promptInjection from './detections/prompt-injection.rule.json'
 import dnsTunneling from './detections/dns-tunneling.rule.json'
 
+// CTF campaign detections (deployable rule bodies extracted verbatim from
+// detections/ctf/*.json api_body). Pushed by the Deploy wizard alongside the base rules.
+import ctfBox1ScannerRecon from './detections/campaigns/ctf-box1-scanner-recon.rule.json'
+import ctfBox1ReconSweepFanout from './detections/campaigns/ctf-box1-recon-sweep-fanout.rule.json'
+import ctfBox2PolymorphicJa4 from './detections/campaigns/ctf-box2-polymorphic-ja4.rule.json'
+import ctfBox3ConciergePromptInjection from './detections/campaigns/ctf-box3-concierge-prompt-injection.rule.json'
+import ctfBox3ConciergeInjectionBurst from './detections/campaigns/ctf-box3-concierge-injection-burst.rule.json'
+import ctfBox4AgenticBreakout from './detections/campaigns/ctf-box4-agentic-breakout.rule.json'
+import ctfBox4MultiVectorStorm from './detections/campaigns/ctf-box4-multi-vector-storm.rule.json'
+import exfilTrainingDataModelWeights from './detections/campaigns/exfil-training-data-model-weights.rule.json'
+
 import threatDetectionDashboard from './dashboards/threat-detection.dashboard.json'
 import ingestionInventoryDashboard from './dashboards/ingestion-inventory.dashboard.json'
 
@@ -55,6 +66,39 @@ export const DETECTIONS = DETECTION_DEFS.map(({ key, scenarioId, rule, deployedI
   }
 })
 
+// CTF campaign detections — same deployable shape as the base rules, tied to the
+// 'ctf' campaign/scenario. The Deploy wizard POSTs `item.rule` for each of these.
+const CAMPAIGN_DETECTION_DEFS = [
+  { key: 'ctf-box1-scanner-recon',              campaignId: 'ctf', box: 'Box 1', rule: ctfBox1ScannerRecon,             scenarioId: 'ctf' },
+  { key: 'ctf-box1-recon-sweep-fanout',         campaignId: 'ctf', box: 'Box 1', rule: ctfBox1ReconSweepFanout,         scenarioId: 'ctf' },
+  { key: 'ctf-box2-polymorphic-ja4',            campaignId: 'ctf', box: 'Box 2', rule: ctfBox2PolymorphicJa4,           scenarioId: 'ctf' },
+  { key: 'ctf-box3-concierge-prompt-injection', campaignId: 'ctf', box: 'Box 3', rule: ctfBox3ConciergePromptInjection, scenarioId: 'ctf' },
+  { key: 'ctf-box3-concierge-injection-burst',  campaignId: 'ctf', box: 'Box 3', rule: ctfBox3ConciergeInjectionBurst,  scenarioId: 'ctf' },
+  { key: 'ctf-box4-agentic-breakout',           campaignId: 'ctf', box: 'Box 4', rule: ctfBox4AgenticBreakout,          scenarioId: 'ctf' },
+  { key: 'ctf-box4-multi-vector-storm',         campaignId: 'ctf', box: 'Box 4', rule: ctfBox4MultiVectorStorm,         scenarioId: 'ctf' },
+  { key: 'exfil-training-data-model-weights',   campaignId: 'ctf', box: 'Cross-box', rule: exfilTrainingDataModelWeights, scenarioId: 'ctf' },
+]
+
+export const CAMPAIGN_DETECTIONS = CAMPAIGN_DETECTION_DEFS.map(({ key, campaignId, box, rule, scenarioId }) => {
+  const data = rule.data || {}
+  return {
+    type: 'detection',
+    key,
+    campaignId,
+    scenarioId,
+    box,
+    name: data.name || key,
+    description: data.description || '',
+    severity: data.severity || 'Medium',
+    queryType: data.queryType || 'scheduled',
+    query: data.scheduledParams?.query || data.s1ql || '',
+    runIntervalMinutes: data.scheduledParams?.runIntervalMinutes ?? null,
+    lookbackWindowMinutes: data.scheduledParams?.lookbackWindowMinutes ?? null,
+    deployedId: null,
+    rule, // full deployable JSON
+  }
+})
+
 // Hyperautomation response workflows. workflowKey matches the loaders in
 // haPlaybooks.js (src/data/ha-workflows/<key>.workflow.json) so the raw JSON is
 // lazy-loaded on demand. web-attacks covers three scenarios.
@@ -82,4 +126,5 @@ export const KNOWLEDGE_OBJECT_GROUPS = [
   { type: 'detection', label: 'STAR / Scheduled Detections', items: DETECTIONS },
   { type: 'ha',        label: 'Hyperautomation Workflows',   items: HA_WORKFLOWS },
   { type: 'dashboard', label: 'SDL Dashboards',              items: DASHBOARDS },
+  { type: 'detection', label: 'Campaign Detections (CTF)',   items: CAMPAIGN_DETECTIONS },
 ]

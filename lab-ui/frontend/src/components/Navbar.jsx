@@ -13,8 +13,8 @@ import AccountMenu from './AccountMenu'
 const NAV_ITEMS = [
   { to: '/',             label: 'Dashboard',    icon: LayoutDashboard },
   { to: '/scenarios',    label: 'Scenarios',    icon: Target },
+  { to: '/assets',       label: 'Assets',       icon: Boxes },
   { to: '/architecture', label: 'Architecture', icon: Network },
-  { to: '/knowledge',    label: 'Knowledge',    icon: Boxes },
 ]
 
 function NavItem({ to, label, icon: Icon, location }) {

@@ -1,0 +1,19 @@
+{
+  "data": {
+    "name": "SoleDrop-CTF-Box1-ScannerRecon",
+    "description": "Single recon request to SoleDrop: known scanner User-Agent or probe of a sensitive file / forced-browse endpoint. MITRE T1595.002 / T1083 / T1190; ATLAS AML.T0035. Source: Cloudflare HTTP/Firewall (class_uid=4002).",
+    "queryType": "events",
+    "queryLang": "2.0",
+    "severity": "Medium",
+    "status": "Disabled",
+    "expirationMode": "Permanent",
+    "treatAsThreat": "UNDEFINED",
+    "networkQuarantine": false,
+    "s1ql": "dataSource.name = 'Cloudflare' AND class_uid = 4002 AND (http_request.user_agent matches '(?i)(nikto|sqlmap|nuclei|masscan|wpscan|dirsearch|dirbuster|gobuster|feroxbuster|libwww-perl|autogpt|python-requests)' OR http_request.url.path in ('/.env','/.env.production','/.env.local','/.git/HEAD','/.git/config','/.aws/credentials','/config.json','/secrets.json','/.DS_Store','/api/v1/admin','/actuator/env','/phpmyadmin','/wp-login.php'))"
+  },
+  "filter": {
+    "accountIds": [
+      "<accountId>"
+    ]
+  }
+}

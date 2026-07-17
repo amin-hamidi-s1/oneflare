@@ -666,29 +666,6 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* Pre-configured banner — this instance ships server-side defaults */}
-      {serverConfig?.domain && (
-        <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-4 flex gap-3">
-          <Info className="w-5 h-5 text-orange-400 shrink-0 mt-0.5" />
-          <p className="text-sm text-slate-300 leading-relaxed">
-            <strong className="text-orange-400">This instance is pre-configured.</strong>{' '}
-            Scenarios target <span className="font-mono text-slate-200">{serverConfig.domain}</span> out of the box —
-            you don't need to fill anything in to run them. The non-sensitive fields below are
-            <strong className="text-slate-200"> optional per-browser overrides</strong> on top of the server defaults.
-            API tokens are never baked in and always stay in your browser.
-          </p>
-        </div>
-      )}
-
-      {/* Privacy banner */}
-      <div className="rounded-xl border border-green-500/20 bg-green-500/5 p-4 flex gap-3">
-        <Shield className="w-5 h-5 text-green-400 shrink-0 mt-0.5" />
-        <p className="text-sm text-slate-300 leading-relaxed">
-          <strong className="text-green-400">Settings are stored in your browser only.</strong>{' '}
-          Tokens are never sent to external servers — only to your local Docker backend when you explicitly run an attack or test connection.
-        </p>
-      </div>
-
       {/* Section 0: Lab Identity — multi-tenant relay registration */}
       <LabIdentitySection serverConfig={serverConfig} />
 
@@ -752,6 +729,33 @@ export default function Settings() {
             }
           />
 
+          {/* Target URL overrides — optional; override the domain-derived defaults */}
+          <div className="rounded-lg bg-white/3 border border-white/10 p-3 flex gap-2 text-xs text-slate-400">
+            <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+            Shop / Portal / API URLs default to <span className="font-mono">shop|portal|api.&lt;Domain&gt;</span> above. Set them only to point at a different host.
+          </div>
+          <Field
+            label="Shop URL"
+            fieldKey="shop_url"
+            value={settings.shop_url}
+            onChange={handleChange}
+            placeholder={`https://shop.${settings.cf_domain || 'one-flare.com'}`}
+          />
+          <Field
+            label="Portal URL"
+            fieldKey="portal_url"
+            value={settings.portal_url}
+            onChange={handleChange}
+            placeholder={`https://portal.${settings.cf_domain || 'one-flare.com'}`}
+          />
+          <Field
+            label="API URL"
+            fieldKey="api_url"
+            value={settings.api_url}
+            onChange={handleChange}
+            placeholder={`https://api.${settings.cf_domain || 'one-flare.com'}`}
+          />
+
           {/* Test connection */}
           <div className="flex items-center gap-3 pt-1">
             <button
@@ -782,118 +786,7 @@ export default function Settings() {
         </div>
       </Section>
 
-      {/* Section 2: Target URL Overrides */}
-      <Section title="Target URL Overrides" icon={Globe}>
-        <div className="space-y-4">
-          <div className="rounded-lg bg-white/3 border border-white/10 p-3 flex gap-2 text-xs text-slate-400">
-            <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-            Leave blank to use defaults constructed from your Domain setting above.
-          </div>
-          <Field
-            label="Shop URL"
-            fieldKey="shop_url"
-            value={settings.shop_url}
-            onChange={handleChange}
-            placeholder={`https://shop.${settings.cf_domain || 'one-flare.com'}`}
-          />
-          <Field
-            label="Portal URL"
-            fieldKey="portal_url"
-            value={settings.portal_url}
-            onChange={handleChange}
-            placeholder={`https://portal.${settings.cf_domain || 'one-flare.com'}`}
-          />
-          <Field
-            label="API URL"
-            fieldKey="api_url"
-            value={settings.api_url}
-            onChange={handleChange}
-            placeholder={`https://api.${settings.cf_domain || 'one-flare.com'}`}
-          />
-        </div>
-      </Section>
-
-      {/* Section 3: SentinelOne */}
-      <Section title="SentinelOne Configuration" icon={Shield}>
-        <div className="space-y-4">
-          <Field
-            label="S1 API URL"
-            fieldKey="s1_api_url"
-            value={settings.s1_api_url}
-            onChange={handleChange}
-            placeholder="https://your-tenant.sentinelone.net"
-          />
-          <Field
-            label="S1 API Token"
-            fieldKey="s1_api_token"
-            value={settings.s1_api_token}
-            onChange={handleChange}
-            showToggle
-            placeholder="API token from SentinelOne console"
-          />
-          <Field
-            label="S1 MCP Server URL"
-            fieldKey="s1_mcp_url"
-            value={settings.s1_mcp_url}
-            onChange={handleChange}
-            placeholder="http://localhost:3001"
-            note="Used by Claude Code's SentinelOne Purple MCP integration for automated response actions."
-          />
-        </div>
-      </Section>
-
-      {/* Section 4: Attack Intensity */}
-      <Section title="Attack Intensity" icon={Zap}>
-        <div className="space-y-5">
-          <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-3 flex gap-2 text-xs text-yellow-400">
-            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-            Increasing speed reduces realism. Slower requests are harder to detect as automated.
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Request Delay</label>
-              <span className="text-sm font-mono text-orange-400 font-bold">{delay.toFixed(1)}s</span>
-            </div>
-            <input
-              type="range"
-              min="0.1"
-              max="5"
-              step="0.1"
-              value={delay}
-              onChange={(e) => handleChange('attack_delay', e.target.value)}
-            />
-            <div className="flex justify-between text-xs text-slate-600">
-              <span>0.1s (aggressive)</span>
-              <span>5.0s (stealthy)</span>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Jitter</label>
-              <span className="text-sm font-mono text-purple-400 font-bold">±{jitter.toFixed(1)}s</span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="2"
-              step="0.1"
-              value={jitter}
-              onChange={(e) => handleChange('attack_jitter', e.target.value)}
-            />
-            <div className="flex justify-between text-xs text-slate-600">
-              <span>0s (no jitter)</span>
-              <span>2.0s (max jitter)</span>
-            </div>
-            <p className="text-xs text-slate-500">
-              Jitter adds random variation to delays, making traffic appear more human-like. Passed to attack scripts via <span className="font-mono text-slate-400">ATTACK_DELAY</span> and <span className="font-mono text-slate-400">ATTACK_JITTER</span> environment variables.
-            </p>
-          </div>
-        </div>
-      </Section>
-
-      {/* Section 5: Run History */}
+      {/* Run History */}
       <Section title="Run History" icon={HistoryIcon}>
         <HistoryContent />
       </Section>

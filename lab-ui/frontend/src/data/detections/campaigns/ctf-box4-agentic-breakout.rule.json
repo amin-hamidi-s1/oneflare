@@ -1,0 +1,36 @@
+{
+  "data": {
+    "name": "SoleDrop-CTF-Box4-AgenticBreakout",
+    "description": "Agentic multi-vector breakout: same source shows recon/prompt-injection AND RCE/SSRF/traversal exploitation in 30 min. Log4Shell/Spring4Shell/Struts + SSRF to 169.254.169.254 + path traversal. MITRE T1190 / T1119 / T1020; ATLAS AML.T0054 / AML.T0040. Source: Cloudflare class_uid=4002.",
+    "queryType": "correlation",
+    "queryLang": "2.0",
+    "severity": "Critical",
+    "status": "Disabled",
+    "expirationMode": "Permanent",
+    "treatAsThreat": "UNDEFINED",
+    "networkQuarantine": false,
+    "s1ql": "",
+    "correlationParams": {
+      "entity": "ip",
+      "matchInOrder": false,
+      "timeWindow": {
+        "windowMinutes": 30
+      },
+      "subQueries": [
+        {
+          "matchesRequired": 1,
+          "subQuery": "dataSource.name = 'Cloudflare' AND class_uid = 4002 AND (http_request.url.path in ('/.env','/.git/HEAD','/api/v1/admin','/api/v1/training-data','/actuator/env') OR http_request.url.url_string matches '(?i)(ignore (all )?previous instructions|do anything now|\\bDAN\\b|jailbreak)')"
+        },
+        {
+          "matchesRequired": 1,
+          "subQuery": "dataSource.name = 'Cloudflare' AND class_uid = 4002 AND (http_request.url.url_string matches '(?i)(\\$\\{jndi:|\\$\\{\\$\\{|ognl|classLoader|%2e%2e%2f|169\\.254\\.169\\.254|metadata\\.google\\.internal|file:///etc/passwd)' OR http_request.user_agent matches '(?i)(\\$\\{jndi:|\\$\\{lower:|\\$\\{::)')"
+        }
+      ]
+    }
+  },
+  "filter": {
+    "accountIds": [
+      "<accountId>"
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "data": {
+    "name": "SoleDrop-CTF-Box1-ReconSweep-Fanout",
+    "description": "One source IP probing >=8 distinct sensitive/recon paths on SoleDrop in the window (recon sweep / forced-browse fan-out). MITRE T1595.002 / T1046; ATLAS AML.T0035. Source: Cloudflare class_uid=4002.",
+    "queryType": "scheduled",
+    "queryLang": "2.0",
+    "severity": "High",
+    "status": "Disabled",
+    "expirationMode": "Permanent",
+    "treatAsThreat": "UNDEFINED",
+    "networkQuarantine": false,
+    "entityMappings": [
+      {
+        "columnName": "src_ip"
+      }
+    ],
+    "scheduledParams": {
+      "query": "dataSource.name='Cloudflare' class_uid=4002 http_request.url.hostname contains '.lab.soledrop.co' http_request.url.path=* | filter http_request.url.path in ('/.env','/.env.production','/.env.local','/.git/HEAD','/.git/config','/.aws/credentials','/config.json','/secrets.json','/.DS_Store','/api/v1/admin','/api/v1/users','/api/v1/training-data','/api/v1/models','/actuator','/actuator/env','/actuator/health','/console','/phpmyadmin','/wp-admin','/wp-login.php','/admin','/admin/login','/admin/config','/dashboard','/openapi.json','/swagger.json','/swagger-ui.html','/v1/api-docs') | group distinct_paths=estimate_distinct(http_request.url.path), hits=count(), first_seen=oldest(timestamp), last_seen=newest(timestamp), ua=any(http_request.user_agent), ja3=any(tls.ja3_hash.value) by src_ip=src_endpoint.ip | filter distinct_paths >= 8 | columns src_ip, distinct_paths, hits, ua, ja4, first_seen, last_seen | sort -distinct_paths | limit 100",
+      "runIntervalMinutes": 15,
+      "lookbackWindowMinutes": 15,
+      "threshold": {
+        "value": 0,
+        "operator": "Greater"
+      }
+    }
+  },
+  "filter": {
+    "accountIds": [
+      "<accountId>"
+    ]
+  }
+}

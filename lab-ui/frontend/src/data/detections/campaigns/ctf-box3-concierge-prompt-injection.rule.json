@@ -1,0 +1,19 @@
+{
+  "data": {
+    "name": "SoleDrop-CTF-Box3-ConciergePromptInjection",
+    "description": "Prompt-injection / jailbreak against SoleDrop Concierge /api/v1/chat: high Cloudflare Firewall-for-AI injection score, or DAN/system-prompt-extraction/SSTI/JNDI marker in URL or User-Agent. ATLAS AML.T0054 / AML.T0040 / AML.T0024; MITRE T1190. Source: Cloudflare class_uid=4002. NOTE: unmapped.FirewallForAIInjectionScore is confirmed live; unmapped.AISecurityInjectionScore is TO-VERIFY; payload-text clauses remain the fallback.",
+    "queryType": "events",
+    "queryLang": "2.0",
+    "severity": "High",
+    "status": "Disabled",
+    "expirationMode": "Permanent",
+    "treatAsThreat": "UNDEFINED",
+    "networkQuarantine": false,
+    "s1ql": "dataSource.name = 'Cloudflare' AND class_uid = 4002 AND http_request.url.path contains:anycase('/api/v1/chat') AND (number(unmapped.FirewallForAIInjectionScore) >= 50 OR http_request.url.url_string matches '(?i)(ignore (all )?previous instructions|do anything now|\\bDAN\\b|system override|unrestricted mode|jailbreak|\\$\\{jndi:|<\\|im_start\\|>|system prompt|SECRET_KEY|INCIDENT_KEY)' OR http_request.user_agent matches '(?i)\\$\\{(jndi|::-|lower:)')"
+  },
+  "filter": {
+    "accountIds": [
+      "<accountId>"
+    ]
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "data": {
+    "name": "SoleDrop-CTF-Box3-ConciergeInjectionBurst",
+    "description": ">=3 prompt-injection attempts against SoleDrop Concierge /api/v1/chat from one source in the window (sustained jailbreak campaign). ATLAS AML.T0054 / AML.T0040; MITRE T1190. Source: Cloudflare class_uid=4002. Carries JA4 for cross-box actor correlation.",
+    "queryType": "scheduled",
+    "queryLang": "2.0",
+    "severity": "High",
+    "status": "Disabled",
+    "expirationMode": "Permanent",
+    "treatAsThreat": "UNDEFINED",
+    "networkQuarantine": false,
+    "entityMappings": [
+      {
+        "columnName": "src_ip"
+      },
+      {
+        "columnName": "ja4"
+      }
+    ],
+    "scheduledParams": {
+      "query": "dataSource.name='Cloudflare' class_uid=4002 http_request.url.hostname contains '.lab.soledrop.co' http_request.url.path contains:anycase('/api/v1/chat') | filter (number(unmapped.FirewallForAIInjectionScore) >= 50 OR http_request.url.url_string matches '(?i)(ignore (all )?previous instructions|do anything now|\\bDAN\\b|jailbreak|\\$\\{jndi:|system prompt|SECRET_KEY)' OR http_request.user_agent matches '(?i)\\$\\{(jndi|::-|lower:)') | group injection_attempts=count(), max_ai_score=max(number(unmapped.FirewallForAIInjectionScore)), first_seen=oldest(timestamp), last_seen=newest(timestamp), ja3=any(tls.ja3_hash.value), ua=any(http_request.user_agent) by src_ip=src_endpoint.ip | filter injection_attempts >= 3 | columns src_ip, injection_attempts, max_ai_score, ja3, ua, first_seen, last_seen | sort -injection_attempts | limit 100",
+      "runIntervalMinutes": 15,
+      "lookbackWindowMinutes": 15,
+      "threshold": {
+        "value": 0,
+        "operator": "Greater"
+      }
+    }
+  },
+  "filter": {
+    "accountIds": [
+      "<accountId>"
+    ]
+  }
+}

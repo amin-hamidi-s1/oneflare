@@ -1,0 +1,35 @@
+{
+  "data": {
+    "name": "SoleDrop-CTF-Box2-PolymorphicJA4",
+    "description": "Polymorphic bot: one JA4 TLS fingerprint behind >=6 distinct User-Agents in the window (UA rotation, constant TLS handshake = Python requests). CTF flag JA4 t13d1812h1_85036bcba153_b26ce05bbdd6. MITRE T1036.005 / T1595.002; ATLAS AML.T0035. Source: Cloudflare HTTP Requests (class_uid=4002).",
+    "queryType": "scheduled",
+    "queryLang": "2.0",
+    "severity": "High",
+    "status": "Disabled",
+    "expirationMode": "Permanent",
+    "treatAsThreat": "UNDEFINED",
+    "networkQuarantine": false,
+    "entityMappings": [
+      {
+        "columnName": "ja4"
+      },
+      {
+        "columnName": "src_ip"
+      }
+    ],
+    "scheduledParams": {
+      "query": "dataSource.name='Cloudflare' dataSource.cloudflare_dataset='HTTP Requests' http_request.url.hostname contains '.lab.soledrop.co' tls.ja3_hash.value=* http_request.user_agent=* | group distinct_uas=estimate_distinct(http_request.user_agent), hits=count(), distinct_paths=estimate_distinct(http_request.url.path), src_ips=estimate_distinct(src_endpoint.ip), first_seen=oldest(timestamp), last_seen=newest(timestamp), src_ip=any(src_endpoint.ip) by ja3=tls.ja3_hash.value | filter distinct_uas >= 6 | columns ja4, distinct_uas, distinct_paths, hits, src_ips, src_ip, first_seen, last_seen | sort -distinct_uas | limit 100",
+      "runIntervalMinutes": 15,
+      "lookbackWindowMinutes": 15,
+      "threshold": {
+        "value": 0,
+        "operator": "Greater"
+      }
+    }
+  },
+  "filter": {
+    "accountIds": [
+      "<accountId>"
+    ]
+  }
+}
