@@ -893,10 +893,24 @@ THRESHOLD: exploit_hits >= 2 AND exfil_hits >= 3 from same source`,
     siemSeverity: "High",
     siemTactic: "T1190 Exploit Public-Facing Application + T1119/T1020 Automated Collection & Exfiltration",
     responseWorkflow: [
-      { step: 1, action: "Box 1 — CF WAF", detail: "One ClientIP hits 8+ recon paths / scanner UA in 15 min → auto-block the ClientIP in a CF WAF custom rule via API → create an S1 threat-intel IOC → page the on-call SOC analyst." },
-      { step: 2, action: "Box 2 — Bot Mgmt", detail: "Fingerprint match in S1 → enrich with CF threat-intel → block the fingerprint via a CF WAF custom rule + enable a drop-day Waiting Room on checkout. S1 Purple AI summarizes the polymorphic swarm into one threat narrative." },
-      { step: 3, action: "Box 3 — AI Firewall + ATO", detail: "Injection score high + repeat-offender fingerprint → S1 SOAR creates a high-severity incident linking Box 1+2+3 → apply a Cloudflare managed-challenge (Turnstile) to /api/v1/chat → force password reset + revoke sessions on stuffed accounts." },
-      { step: 4, action: "Box 4 — Breakout", detail: "Full SOAR playbook: (1) block source IP + fingerprint in CF Firewall → (2) S1 critical incident with the full timeline → (3) lock down checkout (Waiting Room) → (4) revoke API keys/sessions with the matching fingerprint → (5) PagerDuty critical — automated in under 90 seconds." },
+      { step: 1, action: "Box 1 — Detect the recon trigger", detail: "SoleDrop CTF Box 1 rule fires: one source IP hits 12+ distinct paths or 5+ scanner-UA requests within the 1-min window." },
+      { step: 2, action: "Box 1 — Auto-block the source IP", detail: "Push a Cloudflare WAF custom rule via API blocking the offending ClientIP at the edge." },
+      { step: 3, action: "Box 1 — Create a threat-intel IOC", detail: "Log the IP as an IOC in SentinelOne so it's flagged instantly if it reappears in a later box or a future run." },
+      { step: 4, action: "Box 1 — Page the on-call SOC analyst", detail: "Notify with the recon summary — distinct paths touched, scanner UA, timestamp range." },
+      { step: 5, action: "Box 2 — Confirm the swarm fingerprint", detail: "PowerQuery groups by TLS (JA3) fingerprint; 6+ distinct User-Agents on one fingerprint confirms a polymorphic bot swarm, not organic shopper traffic." },
+      { step: 6, action: "Box 2 — Enrich with threat intel", detail: "Cross-reference the fingerprint and its source IPs against Cloudflare threat-intel feeds for known botnet/scraper reputation." },
+      { step: 7, action: "Box 2 — Block the fingerprint", detail: "Push a Cloudflare WAF custom rule blocking requests matching the identified TLS fingerprint, regardless of User-Agent." },
+      { step: 8, action: "Box 2 — Enable a drop-day Waiting Room", detail: "Turn on a Cloudflare Waiting Room in front of checkout to absorb remaining swarm volume without impacting real shoppers." },
+      { step: 9, action: "Box 2 — Summarize via Purple AI", detail: "Have SentinelOne Purple AI synthesize the swarm's behavior into one narrative for the SOC handoff." },
+      { step: 10, action: "Box 3 — Correlate injection + repeat offender", detail: "A high FirewallForAIInjectionScore combined with a fingerprint already flagged in Box 1/2 raises this to a linked, high-severity finding." },
+      { step: 11, action: "Box 3 — Open a linked incident", detail: "SentinelOne SOAR creates one high-severity incident spanning Box 1, 2, and 3 — same actor, escalating tactics." },
+      { step: 12, action: "Box 3 — Challenge the concierge endpoint", detail: "Apply a Cloudflare managed challenge (Turnstile) to POST /api/v1/chat to stop further injection attempts." },
+      { step: 13, action: "Box 3 — Contain the account takeover", detail: "Force a password reset and revoke active sessions on every account hit by the credential-stuffing burst." },
+      { step: 14, action: "Box 4 — Block IP + fingerprint together", detail: "Push a combined Cloudflare Firewall rule blocking both the source IP and its TLS fingerprint — closes the door on simple IP rotation." },
+      { step: 15, action: "Box 4 — Escalate to a critical incident", detail: "SentinelOne opens a critical incident with the full 4-box timeline attached as evidence." },
+      { step: 16, action: "Box 4 — Lock down checkout", detail: "Enable the Waiting Room across every checkout/cart endpoint to fully contain the breakout." },
+      { step: 17, action: "Box 4 — Revoke credentials", detail: "Revoke API keys and sessions tied to the matching fingerprint across every endpoint it touched." },
+      { step: 18, action: "Box 4 — Page critical", detail: "Trigger a PagerDuty critical page — the full playbook runs automated in under 90 seconds." },
     ],
     siem: {
       ruleName: "SoleDrop CTF — Box 4 Breakout (exploit + exfil correlation)",
@@ -932,6 +946,65 @@ THRESHOLD: exploit_hits >= 2 AND exfil_hits >= 3 from same source`,
   on src_endpoint.ip
 | sort -exploit_hits
 | limit 100`,
+      additionalDetections: [
+        {
+          name: "Box 1 — Recon / Vuln Scanning",
+          severity: "Medium",
+          mitre: "T1595.002",
+          description: "One source IP hitting many distinct paths and/or scanner User-Agents. Live-verified: attacker IPs returned 41 and 39 distinct paths (144 and 97 scanner hits); benign traffic maxed at 4 paths / 0 scanner hits.",
+          query: `dataSource.name='Cloudflare' http_request.url.hostname contains '.lab.soledrop.co' src_endpoint.ip=*
+| group distinct_paths = estimate_distinct(http_request.url.path),
+        scanner_hits   = count(http_request.user_agent matches 'nikto|nuclei|sqlmap|masscan|wpscan|dirsearch|dirbuster|gobuster|feroxbuster|libwww-perl|python-requests|curl/'),
+        total          = count(),
+        sample_uas     = array_agg_distinct(http_request.user_agent, 8)
+  by src_endpoint.ip
+| filter distinct_paths >= 12 || scanner_hits >= 5
+| sort -distinct_paths
+| limit 100`,
+        },
+        {
+          name: "Box 2 — Bot Swarm (constant JA3)",
+          severity: "Medium",
+          mitre: "T1595 / T1036.005",
+          description: "One TLS (JA3) fingerprint appearing under many different User-Agents. Live-verified: the swarm fingerprint returned 37 distinct User-Agents / 871 requests; every other JA3 had 1–2 UAs. Depends on the Bot Management entitlement.",
+          query: `dataSource.name='Cloudflare' dataSource.cloudflare_dataset='HTTP Requests' http_request.url.hostname contains '.lab.soledrop.co' tls.ja3_hash.value=*
+| group ua_variety = estimate_distinct(http_request.user_agent),
+        requests    = count(),
+        ip_spread   = estimate_distinct(src_endpoint.ip),
+        sample_uas  = array_agg_distinct(http_request.user_agent, 20)
+  by fp = tls.ja3_hash.value
+| filter ua_variety >= 6
+| sort -ua_variety
+| limit 50`,
+        },
+        {
+          name: "Box 3a — AI-Concierge Abuse",
+          severity: "High",
+          mitre: "ATLAS AML.T0051",
+          description: "High /api/v1/chat volume + Firewall-for-AI injection score. Live-verified: attacker IP sent 95 chat hits with max_injection=100 and 52 WAF blocks; second IP → 60 hits / 31 blocks.",
+          query: `dataSource.name='Cloudflare' http_request.url.hostname contains '.lab.soledrop.co' http_request.url.path='/api/v1/chat'
+| let inj = number(unmapped.FirewallForAIInjectionScore)
+| group chat_hits = count(),
+        max_injection = max(inj),
+        waf_blocks    = count(action='block')
+  by src_endpoint.ip
+| filter chat_hits >= 5
+| sort -chat_hits
+| limit 100`,
+        },
+        {
+          name: "Box 3b — Credential Stuffing",
+          severity: "High",
+          mitre: "T1110.004",
+          description: "Burst of POST /login from one IP. Live-verified: attacker IPs returned 53 and 24 login POSTs — well above a realistic human retry count.",
+          query: `dataSource.name='Cloudflare' http_request.url.hostname contains '.lab.soledrop.co' http_request.url.path='/login' http_request.http_method='POST'
+| group login_posts = count(), last_seen = max(timestamp)
+  by src_endpoint.ip
+| filter login_posts >= 8
+| sort -login_posts
+| limit 100`,
+        },
+      ],
       queryExplained: [
         { code: "http_request.url.hostname contains '.lab.soledrop.co'", note: "Per-attendee wildcard scope — the account also carries an unrelated Cloudflare Gateway feed under the same dataSource.name, so this filter is mandatory, not optional." },
         { code: "number(unmapped.WAFSQLiAttackScore) ... sqli <= 20", note: "WAF scores arrive as strings; cast with number(). LOWER = worse (confirmed 1–10 on real attacks vs ~97 clean) — the opposite of the intuitive '>=90' guess." },

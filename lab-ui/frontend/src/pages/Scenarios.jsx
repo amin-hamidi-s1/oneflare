@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ExternalLink, Zap, Target, AlertTriangle } from 'lucide-react'
+import { ChevronRight, Zap, Target, AlertTriangle } from 'lucide-react'
 import ScenarioCard from '../components/ScenarioCard.jsx'
 import { SCENARIOS } from '../data/scenarios.js'
+
+// Quick Scenarios grid is single-technique attacks only — the multi-phase
+// campaigns (ctf/financial/healthcare/saas) live in the Campaigns section
+// below instead, using their own scenario page (via handleOpenCampaign).
+const QUICK_SCENARIOS = SCENARIOS.filter(s => s.category !== 'Campaign')
 
 // Industry campaign → badge label
 function getCampaignBadge(c) {
@@ -71,10 +76,10 @@ function CampaignCard({ campaign, onOpen }) {
             : 'border-orange-500/40 text-orange-400 bg-orange-500/10 hover:bg-orange-500/20'
           }
         `}
-        aria-label={`Open ${campaign.name} full console`}
+        aria-label={`View ${campaign.name} scenario`}
       >
-        Open Full Console
-        <ExternalLink className="w-3.5 h-3.5" />
+        View Scenario
+        <ChevronRight className="w-3.5 h-3.5" />
       </button>
     </div>
   )
@@ -116,11 +121,10 @@ export default function Scenarios() {
   }, [])
 
   function handleOpenCampaign(campaign) {
-    if (campaign.key === 'ctf') {
-      navigate('/threatops?tab=ctf')
-    } else {
-      navigate(`/threatops?tab=industry&campaign=${campaign.key}`)
-    }
+    // Campaign keys (ctf/financial/healthcare/saas) match the scenario ids
+    // 1:1 — each has its own Overview/How It Works/SIEM Detection/Response
+    // Playbook/Run Attack page, same template as the single-technique scenarios.
+    navigate(`/scenarios/${campaign.key}`)
   }
 
   return (
@@ -141,7 +145,7 @@ export default function Scenarios() {
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {SCENARIOS.map(scenario => (
+          {QUICK_SCENARIOS.map(scenario => (
             <ScenarioCard key={scenario.id} scenario={scenario} />
           ))}
         </div>
@@ -151,7 +155,7 @@ export default function Scenarios() {
       <section className="space-y-4">
         <SectionDivider label="Campaigns · multi-phase adversary storylines" accent />
         <p className="text-xs text-slate-500 -mt-1">
-          Live drip pacing, phase timeline, and SOC talking points — opens the full ThreatOps console.
+          Full write-up, live-verified detections, and a box/phase-by-phase Run Attack terminal.
         </p>
 
         {loadingCampaigns ? (
