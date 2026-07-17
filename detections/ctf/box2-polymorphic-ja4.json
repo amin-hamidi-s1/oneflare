@@ -7,7 +7,7 @@
   "design_note": "JA4 maps to ja4_fingerprint_list[0].value. Bracketed array fields CANNOT be used as a filter predicate (HTTP 400) but CAN be used in group-by and columns. So Box 2 is a SCHEDULED rule that GROUPS BY the JA4 column and counts distinct User-Agents — it does not (and cannot) predicate on the literal flag value. This is also the more robust detection: it catches ANY constant-JA4/rotating-UA polymorphic bot, not just this one hardcoded fingerprint.",
   "rules": [
     {
-      "name": "NovaMind-CTF-Box2-PolymorphicJA4",
+      "name": "SoleDrop-CTF-Box2-PolymorphicJA4",
       "rule_type": "scheduled (PowerQuery)",
       "severity": "High",
       "mitre": ["T1036.005 Masquerading: Match Legitimate Name or Location", "T1595.002 Active Scanning", "T1071.001 Application Layer Protocol: Web Protocols"],
@@ -30,7 +30,7 @@
       },
       "api_body": {
         "data": {
-          "name": "NovaMind-CTF-Box2-PolymorphicJA4",
+          "name": "SoleDrop-CTF-Box2-PolymorphicJA4",
           "description": "Polymorphic bot: one JA4 TLS fingerprint behind >=6 distinct User-Agents in the window (UA rotation, constant TLS handshake = Python requests). CTF flag JA4 t13d1812h1_85036bcba153_b26ce05bbdd6. MITRE T1036.005 / T1595.002; ATLAS AML.T0035. Source: Cloudflare HTTP Requests (class_uid=4002).",
           "queryType": "scheduled",
           "queryLang": "2.0",

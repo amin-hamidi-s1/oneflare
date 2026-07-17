@@ -1,11 +1,11 @@
 {
   "box": "Box 4 \u2014 Agentic multi-vector breakout",
-  "scenario": "Full breakout storm: the agent combines recon, bot evasion and AI injection with high-volume RCE (Log4Shell, Spring4Shell, Struts), SSRF to the cloud metadata endpoint (169.254.169.254), and path traversal across every NovaMind endpoint at once.",
+  "scenario": "Full breakout storm: the agent combines recon, bot evasion and AI injection with high-volume RCE (Log4Shell, Spring4Shell, Struts), SSRF to the cloud metadata endpoint (169.254.169.254), and path traversal across every SoleDrop endpoint at once.",
   "attack_source": "attack-scripts/campaigns/ctf.py :: fire_phase_4_* (RCE_PAYLOADS, BREAKOUT_ENDPOINTS, X-Forwarded-For spoofing 185.220.x.x)",
   "field_contract": "detections/shared/field-contract.md",
   "rules": [
     {
-      "name": "NovaMind-CTF-Box4-AgenticBreakout",
+      "name": "SoleDrop-CTF-Box4-AgenticBreakout",
       "rule_type": "correlation",
       "severity": "Critical",
       "mitre": [
@@ -26,7 +26,7 @@
         "http_request.url.path": "mapped \u2014 endpoint + traversal",
         "src_endpoint.ip": "mapped \u2014 correlation entity"
       },
-      "entity_note": "entity must be a tenant-supported correlation entity. 'user' is tenant-confirmed; IP/device-style entities also exist (per detection-rule-types.md) but the exact identifier string for an IP entity is TO-VERIFY on the live tenant. If an IP entity is not available, deploy the scheduled variant below (NovaMind-CTF-Box4-MultiVectorStorm), which groups by src_endpoint.ip directly and needs no correlation-entity support.",
+      "entity_note": "entity must be a tenant-supported correlation entity. 'user' is tenant-confirmed; IP/device-style entities also exist (per detection-rule-types.md) but the exact identifier string for an IP entity is TO-VERIFY on the live tenant. If an IP entity is not available, deploy the scheduled variant below (SoleDrop-CTF-Box4-MultiVectorStorm), which groups by src_endpoint.ip directly and needs no correlation-entity support.",
       "hunt_query": {
         "powerquery_recon_leg": "dataSource.name='Cloudflare' class_uid=4002 | filter (http_request.url.path in ('/.env','/.git/HEAD','/api/v1/admin','/api/v1/training-data','/actuator/env') OR http_request.url.url_string matches '(?i)(ignore (all )?previous instructions|do anything now|\\bDAN\\b|jailbreak)') | group recon_hits=count(), last=newest(timestamp) by src_endpoint.ip | sort -recon_hits | limit 100",
         "powerquery_breakout_leg": "dataSource.name='Cloudflare' class_uid=4002 | filter (http_request.url.url_string matches '(?i)(\\$\\{jndi:|\\$\\{\\$\\{|ognl|classLoader|\\.\\./\\.\\./|%2e%2e%2f|169\\.254\\.169\\.254|metadata\\.google\\.internal|file:///etc/passwd)' OR http_request.user_agent matches '(?i)(\\$\\{jndi:|\\$\\{\\$\\{|\\$\\{lower:|\\$\\{::)') | group rce_hits=count(), last=newest(timestamp), uri=any(http_request.url.url_string), ua=any(http_request.user_agent) by src_endpoint.ip | sort -rce_hits | limit 100",
@@ -35,7 +35,7 @@
       },
       "api_body": {
         "data": {
-          "name": "NovaMind-CTF-Box4-AgenticBreakout",
+          "name": "SoleDrop-CTF-Box4-AgenticBreakout",
           "description": "Agentic multi-vector breakout: same source shows recon/prompt-injection AND RCE/SSRF/traversal exploitation in 30 min. Log4Shell/Spring4Shell/Struts + SSRF to 169.254.169.254 + path traversal. MITRE T1190 / T1119 / T1020; ATLAS AML.T0054 / AML.T0040. Source: Cloudflare class_uid=4002.",
           "queryType": "correlation",
           "queryLang": "2.0",
@@ -74,7 +74,7 @@
       "deploy": "POST -> enable {\"filter\":{\"ids\":[\"<id>\"]}} -> poll ?ids=<id>&isLegacy=false until Active. Correlation rules evaluate streaming once thresholds met in the window."
     },
     {
-      "name": "NovaMind-CTF-Box4-MultiVectorStorm",
+      "name": "SoleDrop-CTF-Box4-MultiVectorStorm",
       "rule_type": "scheduled (PowerQuery)",
       "severity": "Critical",
       "mitre": [
@@ -106,8 +106,8 @@
       },
       "api_body": {
         "data": {
-          "name": "NovaMind-CTF-Box4-MultiVectorStorm",
-          "description": "One source firing >=2 distinct attack classes (RCE/SSRF/traversal/injection) on NovaMind in the window = coordinated agentic breakout. Log4Shell/Spring4Shell/Struts + SSRF 169.254.169.254 + traversal. MITRE T1190 / T1213 / T1119; ATLAS AML.T0054 / AML.T0024. Source: Cloudflare class_uid=4002.",
+          "name": "SoleDrop-CTF-Box4-MultiVectorStorm",
+          "description": "One source firing >=2 distinct attack classes (RCE/SSRF/traversal/injection) on SoleDrop in the window = coordinated agentic breakout. Log4Shell/Spring4Shell/Struts + SSRF 169.254.169.254 + traversal. MITRE T1190 / T1213 / T1119; ATLAS AML.T0054 / AML.T0024. Source: Cloudflare class_uid=4002.",
           "queryType": "scheduled",
           "queryLang": "2.0",
           "severity": "Critical",

@@ -1,11 +1,11 @@
 {
   "box": "Cross-box — Training-data / model-weight / customer-data exfiltration",
-  "scenario": "The agent pulls NovaMind proprietary assets in bulk: training datasets (/api/v1/training-data), model weights (/api/v1/models?include_weights=true), and customer PII (/api/v1/customers/export). Detect by abnormal response volume and/or bulk access to exfil-target endpoints.",
+  "scenario": "The agent pulls SoleDrop proprietary assets in bulk: training datasets (/api/v1/training-data), model weights (/api/v1/models?include_weights=true), and customer PII (/api/v1/customers/export). Detect by abnormal response volume and/or bulk access to exfil-target endpoints.",
   "attack_source": "attack-scripts/campaigns/ctf.py :: BOT_PROBE_PATHS + BREAKOUT_ENDPOINTS (/api/v1/training-data, /api/v1/models?include_weights=true, /api/v1/users?limit=1000, /api/v1/billing) and our existing scenario 06 (/api/v1/customers/export).",
   "field_contract": "detections/shared/field-contract.md",
   "rules": [
     {
-      "name": "NovaMind-Exfil-TrainingData-ModelWeights",
+      "name": "SoleDrop-Exfil-TrainingData-ModelWeights",
       "rule_type": "scheduled (PowerQuery)",
       "severity": "Critical",
       "mitre": ["T1020 Automated Exfiltration", "T1213 Data from Information Repositories", "T1530 Data from Cloud Storage Object"],
@@ -28,8 +28,8 @@
       },
       "api_body": {
         "data": {
-          "name": "NovaMind-Exfil-TrainingData-ModelWeights",
-          "description": "Bulk exfiltration of NovaMind proprietary data: >=10 pulls to training-data/model-weights/customer-export endpoints OR >=5MB aggregate response from one source in the window. MITRE T1020 / T1213 / T1530; ATLAS AML.T0024 / AML.T0044. Source: Cloudflare HTTP Requests (class_uid=4002).",
+          "name": "SoleDrop-Exfil-TrainingData-ModelWeights",
+          "description": "Bulk exfiltration of SoleDrop proprietary data: >=10 pulls to training-data/model-weights/customer-export endpoints OR >=5MB aggregate response from one source in the window. MITRE T1020 / T1213 / T1530; ATLAS AML.T0024 / AML.T0044. Source: Cloudflare HTTP Requests (class_uid=4002).",
           "queryType": "scheduled",
           "queryLang": "2.0",
           "severity": "Critical",

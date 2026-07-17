@@ -1,12 +1,12 @@
 {
   "box": "Box 3 \u2014 Firewall for AI (prompt injection / jailbreak)",
-  "scenario": "The rogue agent attacks NovaMind's Pyxis chat (POST /api/v1/chat) with prompt-injection / jailbreak payloads (DAN, system-prompt extraction, SSTI, JNDI-in-prompt) to exfiltrate training data and secrets. Cloudflare Firewall for AI scores and blocks the prompts.",
-  "attack_source": "attack-scripts/campaigns/ctf.py :: fire_phase_3_* (PROMPT_INJECTION_PAYLOADS, LOG4SHELL_AGENTS_BOX3) -> POST /api/v1/chat model=pyxis-chat-v2",
+  "scenario": "The rogue agent attacks SoleDrop's Concierge chat (POST /api/v1/chat) with prompt-injection / jailbreak payloads (DAN, system-prompt extraction, SSTI, JNDI-in-prompt) to exfiltrate training data and secrets. Cloudflare Firewall for AI scores and blocks the prompts.",
+  "attack_source": "attack-scripts/campaigns/ctf.py :: fire_phase_3_* (PROMPT_INJECTION_PAYLOADS, LOG4SHELL_AGENTS_BOX3) -> POST /api/v1/chat model=soledrop-concierge-v2",
   "field_contract": "detections/shared/field-contract.md",
   "important": "Cloudflare HTTP Requests logs do not carry the request BODY by default, so DAN/JNDI prompt TEXT is reliably visible only when it rides in the URL (http_request.url.url_string) or the User-Agent (the Log4Shell-in-UA case). Prompt-in-body detection depends on the Firewall-for-AI score field (TO-VERIFY: unmapped.FirewallForAIInjectionScore / unmapped.AISecurityInjectionScore). Each rule below therefore pairs the score field with a payload-text fallback so it still fires if the score field is absent post-parse.",
   "rules": [
     {
-      "name": "NovaMind-CTF-Box3-PyxisPromptInjection",
+      "name": "SoleDrop-CTF-Box3-ConciergePromptInjection",
       "rule_type": "single-event (events)",
       "severity": "High",
       "mitre": [
@@ -35,8 +35,8 @@
       },
       "api_body": {
         "data": {
-          "name": "NovaMind-CTF-Box3-PyxisPromptInjection",
-          "description": "Prompt-injection / jailbreak against Pyxis /api/v1/chat: high Cloudflare Firewall-for-AI injection score, or DAN/system-prompt-extraction/SSTI/JNDI marker in URL or User-Agent. ATLAS AML.T0054 / AML.T0040 / AML.T0024; MITRE T1190. Source: Cloudflare class_uid=4002. NOTE: unmapped.*InjectionScore fields are TO-VERIFY; payload-text clauses are the fallback.",
+          "name": "SoleDrop-CTF-Box3-ConciergePromptInjection",
+          "description": "Prompt-injection / jailbreak against SoleDrop Concierge /api/v1/chat: high Cloudflare Firewall-for-AI injection score, or DAN/system-prompt-extraction/SSTI/JNDI marker in URL or User-Agent. ATLAS AML.T0054 / AML.T0040 / AML.T0024; MITRE T1190. Source: Cloudflare class_uid=4002. NOTE: unmapped.*InjectionScore fields are TO-VERIFY; payload-text clauses are the fallback.",
           "queryType": "events",
           "queryLang": "2.0",
           "severity": "High",
@@ -57,7 +57,7 @@
       "deploy": "POST -> enable {\"filter\":{\"ids\":[\"<id>\"]}} -> poll ?ids=<id>&isLegacy=false until Active. Events rules evaluate streaming at ingest; do not ingest test data until Active."
     },
     {
-      "name": "NovaMind-CTF-Box3-PyxisInjectionBurst",
+      "name": "SoleDrop-CTF-Box3-ConciergeInjectionBurst",
       "rule_type": "scheduled (PowerQuery)",
       "severity": "High",
       "mitre": [
@@ -68,7 +68,7 @@
         "AML.T0040 ML Model Inference API Access"
       ],
       "data_source": "Cloudflare \u2014 HTTP Requests (class_uid=4002)",
-      "primary_signal": "N+ injection-scored / payload-bearing chat requests from one source IP in the window \u2014 sustained jailbreak campaign against Pyxis, not a one-off probe.",
+      "primary_signal": "N+ injection-scored / payload-bearing chat requests from one source IP in the window \u2014 sustained jailbreak campaign against SoleDrop Concierge, not a one-off probe.",
       "ocsf_fields": {
         "http_request.url.path": "mapped \u2014 /api/v1/chat scope",
         "src_endpoint.ip": "mapped \u2014 entity",
@@ -82,8 +82,8 @@
       },
       "api_body": {
         "data": {
-          "name": "NovaMind-CTF-Box3-PyxisInjectionBurst",
-          "description": ">=3 prompt-injection attempts against Pyxis /api/v1/chat from one source in the window (sustained jailbreak campaign). ATLAS AML.T0054 / AML.T0040; MITRE T1190. Source: Cloudflare class_uid=4002. Carries JA4 for cross-box actor correlation.",
+          "name": "SoleDrop-CTF-Box3-ConciergeInjectionBurst",
+          "description": ">=3 prompt-injection attempts against SoleDrop Concierge /api/v1/chat from one source in the window (sustained jailbreak campaign). ATLAS AML.T0054 / AML.T0040; MITRE T1190. Source: Cloudflare class_uid=4002. Carries JA4 for cross-box actor correlation.",
           "queryType": "scheduled",
           "queryLang": "2.0",
           "severity": "High",

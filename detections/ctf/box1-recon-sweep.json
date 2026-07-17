@@ -1,11 +1,11 @@
 {
   "box": "Box 1 — CF WAF (Recon)",
-  "scenario": "Agentic AI agent maps the NovaMind attack surface: scanner-tool User-Agents probing sensitive files (/.env, /.git/HEAD) and forced-browse API recon (/api/v1/admin, /api/v1/training-data).",
+  "scenario": "Agentic AI agent maps the SoleDrop attack surface: scanner-tool User-Agents probing sensitive files (/.env, /.git/HEAD) and forced-browse API recon (/api/v1/admin, /api/v1/training-data).",
   "attack_source": "attack-scripts/campaigns/ctf.py :: fire_phase_1_* (RECON_PATHS, SCANNER_AGENTS_BOX1, SQLI_PAYLOADS)",
   "field_contract": "detections/shared/field-contract.md",
   "rules": [
     {
-      "name": "NovaMind-CTF-Box1-ScannerRecon",
+      "name": "SoleDrop-CTF-Box1-ScannerRecon",
       "rule_type": "single-event (events)",
       "severity": "Medium",
       "mitre": ["T1595.002 Active Scanning: Vulnerability Scanning", "T1083 File and Directory Discovery", "T1190 Exploit Public-Facing Application"],
@@ -26,8 +26,8 @@
       },
       "api_body": {
         "data": {
-          "name": "NovaMind-CTF-Box1-ScannerRecon",
-          "description": "Single recon request to NovaMind: known scanner User-Agent or probe of a sensitive file / forced-browse endpoint. MITRE T1595.002 / T1083 / T1190; ATLAS AML.T0035. Source: Cloudflare HTTP/Firewall (class_uid=4002).",
+          "name": "SoleDrop-CTF-Box1-ScannerRecon",
+          "description": "Single recon request to SoleDrop: known scanner User-Agent or probe of a sensitive file / forced-browse endpoint. MITRE T1595.002 / T1083 / T1190; ATLAS AML.T0035. Source: Cloudflare HTTP/Firewall (class_uid=4002).",
           "queryType": "events",
           "queryLang": "2.0",
           "severity": "Medium",
@@ -44,7 +44,7 @@
       "tuning": "Medium severity by design — recon is high-volume and low-confidence on its own. Real value is as the FIRST sub-query of the Box 4 correlation (chain pivot). Consider an inline allowlist of legitimate scanners: AND NOT (src_endpoint.ip in ('<known-scanner-ip>'))."
     },
     {
-      "name": "NovaMind-CTF-Box1-ReconSweep-Fanout",
+      "name": "SoleDrop-CTF-Box1-ReconSweep-Fanout",
       "rule_type": "scheduled (PowerQuery)",
       "severity": "High",
       "mitre": ["T1595.002 Active Scanning: Vulnerability Scanning", "T1046 Network Service Discovery"],
@@ -64,8 +64,8 @@
       },
       "api_body": {
         "data": {
-          "name": "NovaMind-CTF-Box1-ReconSweep-Fanout",
-          "description": "One source IP probing >=8 distinct sensitive/recon paths on NovaMind in the window (recon sweep / forced-browse fan-out). MITRE T1595.002 / T1046; ATLAS AML.T0035. Source: Cloudflare class_uid=4002.",
+          "name": "SoleDrop-CTF-Box1-ReconSweep-Fanout",
+          "description": "One source IP probing >=8 distinct sensitive/recon paths on SoleDrop in the window (recon sweep / forced-browse fan-out). MITRE T1595.002 / T1046; ATLAS AML.T0035. Source: Cloudflare class_uid=4002.",
           "queryType": "scheduled",
           "queryLang": "2.0",
           "severity": "High",

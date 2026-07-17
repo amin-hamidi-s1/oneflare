@@ -20,7 +20,7 @@ Cloudflare Logpush datasets. Both parse to OCSF **HTTP Activity, `class_uid = 40
 | `ClientIP` | `src_endpoint.ip` | str | all (entity) |
 | `ClientRequestPath` | `http_request.url.path` | str | Box1, Box4, Exfil |
 | `ClientRequestURI` | `http_request.url.url_string` | str | Box1, Box3, Box4 (payload-in-URL) |
-| `ClientRequestHost` | `http_request.url.hostname` | str | scoping to NovaMind hosts |
+| `ClientRequestHost` | `http_request.url.hostname` | str | scoping to SoleDrop hosts |
 | `ClientRequestMethod` | `http_request.http_method` | str | Box3 (POST /chat), Box4 |
 | `ClientRequestUserAgent` | `http_request.user_agent` | str | Box1 (scanner UA), Box2, Box3 (JNDI-in-UA) |
 | `OriginResponseStatus` | `http_response.status` | str | Box1, Exfil |
@@ -32,7 +32,7 @@ Cloudflare Logpush datasets. Both parse to OCSF **HTTP Activity, `class_uid = 40
 | `WAFAttackScore` | `risk_score` | int (cast) | Box4 (overall WAF score; wrap in `number()`) |
 | `JA4` | `ja4_fingerprint_list[0].value` | str | **Box2 (signature)**, chain pivot |
 | `JA3Hash` | `tls.ja3_hash.value` | str | Box2 (secondary) |
-| `WorkerScriptName` | `actor.process.name` | str | scoping to Pyxis worker |
+| `WorkerScriptName` | `actor.process.name` | str | scoping to SoleDrop Concierge worker |
 | `EdgeStartTimestamp` | `time` / `start_time` | datetime | windowing |
 
 ### Firewall Events dataset (`dataSource.cloudflare_dataset = 'Firewall Events'`)
@@ -83,7 +83,7 @@ This is the Python `requests` TLS fingerprint. It is **constant** across all CTF
 the rotating User-Agent — that invariance is exactly what Box 2 detects and what ties all 4 boxes to
 one actor.
 
-## NovaMind recon / sensitive paths (from ctf.py RECON_PATHS / BREAKOUT_ENDPOINTS)
+## SoleDrop recon / sensitive paths (from ctf.py RECON_PATHS / BREAKOUT_ENDPOINTS)
 
 Sensitive-file probes: `/.env`, `/.env.production`, `/.env.local`, `/.git/HEAD`, `/.git/config`,
 `/.aws/credentials`, `/config.json`, `/secrets.json`, `/.DS_Store`.
@@ -91,5 +91,5 @@ Forced-browse / API recon: `/api/v1/admin` (always 401), `/api/v1/users`, `/api/
 `/api/v1/models`, `/actuator/env`, `/admin`, `/admin/config`, `/phpmyadmin`, `/wp-login.php`.
 Exfil targets: `/api/v1/training-data`, `/api/v1/models?include_weights=true`,
 `/api/v1/customers/export`, `/api/v1/billing`.
-Pyxis AI target: `POST /api/v1/chat` (model `pyxis-chat-v2`).
+SoleDrop Concierge AI target: `POST /api/v1/chat` (model `soledrop-concierge-v2`).
 </content>
