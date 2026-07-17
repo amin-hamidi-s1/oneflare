@@ -54,8 +54,8 @@ export default function ScenarioCard({ scenario }) {
         <div className="flex items-center gap-2.5">
           <span className={`
             inline-flex items-center justify-center w-8 h-8 rounded-lg text-xs font-mono font-bold
-            border ${CATEGORY_ICON_BG[scenario.category]}
-            ${CATEGORY_ACCENT[scenario.category]}
+            border ${CATEGORY_ICON_BG[scenario.category] || CATEGORY_ICON_BG.WAF}
+            ${CATEGORY_ACCENT[scenario.category] || CATEGORY_ACCENT.WAF}
           `}>
             {scenario.number}
           </span>
@@ -79,7 +79,7 @@ export default function ScenarioCard({ scenario }) {
         <span className="text-xs text-slate-500 font-mono truncate max-w-[60%]" title={scenario.target}>
           {scenario.target}
         </span>
-        <span className={`flex items-center gap-1 text-xs font-semibold ${CATEGORY_ACCENT[scenario.category]} group-hover:gap-2 transition-all`}>
+        <span className={`flex items-center gap-1 text-xs font-semibold ${CATEGORY_ACCENT[scenario.category] || CATEGORY_ACCENT.WAF} group-hover:gap-2 transition-all`}>
           Explore
           <ChevronRight className="w-3.5 h-3.5" />
         </span>

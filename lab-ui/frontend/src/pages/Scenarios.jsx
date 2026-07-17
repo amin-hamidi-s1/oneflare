@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { AlertTriangle, ChevronRight, Layers } from 'lucide-react'
 import ScenarioCard from '../components/ScenarioCard.jsx'
 import Badge from '../components/Badge.jsx'
@@ -81,9 +81,18 @@ function SectionDivider({ label, accent = false }) {
 
 export default function Scenarios() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [campaigns, setCampaigns] = useState([])
   const [loadingCampaigns, setLoadingCampaigns] = useState(true)
   const [allowDns, setAllowDns] = useState(false)
+
+  // react-router doesn't auto-scroll to a hash on navigation — the homepage's
+  // "Campaigns" tile links here with #campaigns, so scroll it into view.
+  useEffect(() => {
+    if (location.hash === '#campaigns') {
+      document.getElementById('campaigns')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [location.hash])
 
   useEffect(() => {
     fetch('/api/campaigns')
@@ -111,7 +120,11 @@ export default function Scenarios() {
     return () => { alive = false }
   }, [])
 
-  const visibleScenarios = SCENARIOS.filter(s => s.id !== 'dns' || allowDns)
+  // Section A is single-technique only — campaigns live in Section B. DNS is
+  // gated to admins on the default console.
+  const visibleScenarios = SCENARIOS.filter(
+    s => s.category !== 'Campaign' && (s.id !== 'dns' || allowDns)
+  )
 
   function handleOpenCampaign(campaign) {
     if (campaign.key === 'ctf') {
@@ -146,10 +159,10 @@ export default function Scenarios() {
       </section>
 
       {/* Section B — Campaigns */}
-      <section className="space-y-4">
+      <section id="campaigns" className="space-y-4 scroll-mt-20">
         <SectionDivider label="Multi-phase Campaigns" accent />
         <p className="text-xs text-slate-500 -mt-1">
-          Live drip pacing, phase timeline, and SOC talking points — opens the full ThreatOps console.
+          Full write-up, live-verified detections, and a box/phase-by-phase Run Attack terminal.
         </p>
 
         {loadingCampaigns ? (
