@@ -1,9 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Shield, Workflow, LayoutDashboard, Terminal as TerminalIcon,
-  Copy, Check, ChevronDown, ChevronUp, Plug,
-  FileCode, Clock, Boxes, Swords,
+  Shield, Workflow, LayoutDashboard,
+  Copy, Check, Plug, Clock, Boxes, Swords,
 } from 'lucide-react'
 import { DETECTIONS, CAMPAIGN_DETECTIONS, HA_WORKFLOWS, DASHBOARDS } from '../data/knowledgeObjects.js'
 import { loadHaWorkflowJson } from '../data/haPlaybooks.js'
@@ -59,12 +58,12 @@ function SectionHeader({ icon: Icon, label, count, accent, sub }) {
 // ── Detection cards ──────────────────────────────────────────────────────────
 
 function DetectionCard({ detection }) {
-  const [open, setOpen] = useState(false)
   const scenario = SCENARIOS.find(s => s.id === detection.scenarioId)
+  const ruleJson = JSON.stringify(detection.rule, null, 2)
 
   return (
     <div className="rounded-xl border border-[#2d1b4e] bg-[#1a0a2e] p-4 transition-all duration-200 hover:-translate-y-0.5">
-      <div className="flex items-start justify-between gap-3 flex-wrap mb-2">
+      <div className="flex items-start justify-between gap-2 mb-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             {detection.box && (
@@ -83,14 +82,15 @@ function DetectionCard({ detection }) {
             </Link>
           )}
         </div>
-        <Badge type="severity" value={detection.severity} />
+        <CopyButton label="Copy JSON" text={ruleJson} />
       </div>
 
       {detection.description && (
         <p className="text-sm text-slate-400 leading-relaxed mb-3">{detection.description}</p>
       )}
 
-      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 font-mono mb-3">
+      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 font-mono">
+        <Badge type="severity" value={detection.severity} />
         <span className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-slate-400">
           {detection.queryType}
         </span>
@@ -104,44 +104,6 @@ function DetectionCard({ detection }) {
           <span>lookback {detection.lookbackWindowMinutes}m</span>
         )}
       </div>
-
-      {detection.query && (
-        <>
-          <div
-            className="collapsible-header !p-2.5 !rounded-lg border border-[#2d1b4e]"
-            onClick={() => setOpen(o => !o)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={e => e.key === 'Enter' && setOpen(o => !o)}
-            aria-expanded={open}
-          >
-            <span className="text-xs font-semibold text-slate-300 flex items-center gap-2">
-              <TerminalIcon className="w-3.5 h-3.5 text-purple-400" />
-              {detection.queryType === 'scheduled' ? 'PowerQuery' : 'S1QL'}
-            </span>
-            {open ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
-          </div>
-
-          {open && (
-            <div className="mt-2">
-              <div className="flex justify-end mb-1.5">
-                <CopyButton text={detection.query} />
-              </div>
-              <pre
-                className="terminal-scroll text-xs leading-relaxed overflow-x-auto rounded-lg p-3 whitespace-pre-wrap max-h-72"
-                style={{
-                  background: '#0a0a14',
-                  border: '1px solid #1e1235',
-                  fontFamily: '"JetBrains Mono", "Fira Code", monospace',
-                  color: '#c4b5fd',
-                }}
-              >
-                <code>{detection.query}</code>
-              </pre>
-            </div>
-          )}
-        </>
-      )}
     </div>
   )
 }
@@ -194,56 +156,32 @@ function HaWorkflowCard({ workflow }) {
 // ── Dashboard cards ───────────────────────────────────────────────────────────
 
 function DashboardCard({ entry }) {
-  const [codeOpen, setCodeOpen] = useState(false)
   const pretty = JSON.stringify(entry.dashboard, null, 2)
 
   return (
     <div className="rounded-xl border border-[#2d1b4e] bg-[#1a0a2e] p-4 transition-all duration-200 hover:-translate-y-0.5">
-      <div className="flex items-start gap-3 mb-2">
-        <div className="w-9 h-9 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
-          <LayoutDashboard className="w-5 h-5 text-purple-400" />
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="w-9 h-9 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
+            <LayoutDashboard className="w-5 h-5 text-purple-400" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-slate-100 leading-snug">{entry.name}</h3>
+            <p className="text-xs text-slate-500 font-mono mt-0.5">
+              {entry.tabs} tab{entry.tabs === 1 ? '' : 's'}
+            </p>
+          </div>
         </div>
-        <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-slate-100 leading-snug">{entry.name}</h3>
-          <p className="text-xs text-slate-500 font-mono mt-0.5">
-            {entry.tabs} tab{entry.tabs === 1 ? '' : 's'}
-          </p>
-        </div>
+        <CopyButton label="Copy JSON" text={pretty} />
       </div>
 
       {entry.description && (
         <p className="text-sm text-slate-400 leading-relaxed mb-3">{entry.description}</p>
       )}
 
-      <div className="text-xs font-mono text-slate-500 bg-white/5 border border-white/10 rounded px-2 py-1.5 mb-3 overflow-x-auto whitespace-nowrap">
+      <div className="text-xs font-mono text-slate-500 bg-white/5 border border-white/10 rounded px-2 py-1.5 overflow-x-auto whitespace-nowrap">
         {entry.deployPath}
       </div>
-
-      <div
-        className="collapsible-header !p-2.5 !rounded-lg border border-[#2d1b4e]"
-        onClick={() => setCodeOpen(o => !o)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={e => e.key === 'Enter' && setCodeOpen(o => !o)}
-        aria-expanded={codeOpen}
-      >
-        <span className="text-xs font-semibold text-slate-300 flex items-center gap-2">
-          <FileCode className="w-3.5 h-3.5 text-orange-400" />
-          {entry.key}.dashboard.json
-        </span>
-        {codeOpen ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
-      </div>
-
-      {codeOpen && (
-        <div className="mt-2">
-          <div className="flex justify-end mb-1.5">
-            <CopyButton text={pretty} label="Copy JSON" />
-          </div>
-          <pre className="terminal-scroll bg-black/40 border border-white/5 rounded-lg p-3 text-xs font-mono text-slate-300 overflow-auto max-h-72 leading-relaxed">
-            {pretty}
-          </pre>
-        </div>
-      )}
     </div>
   )
 }
