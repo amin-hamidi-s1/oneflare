@@ -628,23 +628,8 @@ export default function Architecture() {
         </div>
       </div>
 
-      {/* Deploy entry point */}
-      <DeployKnowledgeObjects />
-
-      {/* Detections collapsible */}
-      <ArchCollapsible title="Detections — STAR Rules" icon={Shield}>
-        <DetectionsContent />
-      </ArchCollapsible>
-
-      {/* Hyperautomation collapsible */}
-      <ArchCollapsible title="Hyperautomation — Response Workflows" icon={Workflow}>
-        <HyperautomationContent />
-      </ArchCollapsible>
-
-      {/* Dashboards collapsible */}
-      <ArchCollapsible title="Dashboards — SDL Console Imports" icon={LayoutDashboard}>
-        <DashboardsContent />
-      </ArchCollapsible>
+      {/* Knowledge objects (detections / HA workflows / dashboards) now live on
+          their own "Knowledge" tab; the deploy wizard moved to Settings. */}
     </div>
   )
 }

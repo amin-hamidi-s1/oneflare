@@ -103,6 +103,65 @@ body {
   border-radius: 2px;
 }
 
+/* Attack-output terminal — theme-aware (goes LIGHT in light mode). The other
+   terminals (History/ThreatOps/Settings/Parsers) intentionally stay dark. */
+.attack-terminal {
+  --term-bg: #0a0a0a;
+  --term-bar: #0f0f0f;
+  --term-edge: #1a1a1a;
+  --term-frame: #1e1235;
+  --term-chrome: #64748b;
+  --term-default: #cbd5e1;
+  --term-muted: #64748b;
+  --term-phase: #94a3b8;
+  --term-block: #4ade80;
+  --term-error: #f87171;
+  --term-allow: #facc15;
+  --term-warn: #eab308;
+  --term-run: #22d3ee;
+  --term-prompt: #475569;
+  --term-caret: #4ade80;
+  --term-sb-track: #0a0a0a;
+  --term-sb-thumb: #262626;
+  border: 1px solid var(--term-frame);
+}
+html[data-theme="light"] .attack-terminal {
+  --term-bg: #faf8ff;
+  --term-bar: #f1ecf9;
+  --term-edge: #e3ddf0;
+  --term-frame: #e3ddf0;
+  --term-chrome: #6b6488;
+  --term-default: #2c2646;
+  --term-muted: #8a83a3;
+  --term-phase: #6d3bbf;
+  --term-block: #15803d;
+  --term-error: #dc2626;
+  --term-allow: #b45309;
+  --term-warn: #a16207;
+  --term-run: #0e7490;
+  --term-prompt: #9891b3;
+  --term-caret: #15803d;
+  --term-sb-track: #efeaf7;
+  --term-sb-thumb: #cabfe0;
+}
+.attack-terminal-bar { background: var(--term-bar); border-bottom: 1px solid var(--term-edge); }
+.attack-terminal-chrome { color: var(--term-chrome); }
+button.attack-terminal-chrome:hover:not(:disabled) { color: var(--term-default); }
+.attack-terminal-body { background: var(--term-bg); }
+.attack-terminal-prompt { color: var(--term-prompt); }
+.attack-terminal-caret { background: var(--term-caret); }
+.attack-terminal-line { color: var(--term-default); }
+.attack-terminal-line.is-default { color: var(--term-default); }
+.attack-terminal-line.is-muted   { color: var(--term-muted); }
+.attack-terminal-line.is-phase   { color: var(--term-phase); font-weight: 600; }
+.attack-terminal-line.is-block   { color: var(--term-block); }
+.attack-terminal-line.is-error   { color: var(--term-error); }
+.attack-terminal-line.is-allow   { color: var(--term-allow); }
+.attack-terminal-line.is-warn    { color: var(--term-warn); }
+.attack-terminal-line.is-run     { color: var(--term-run); }
+.attack-terminal-body.terminal-scroll::-webkit-scrollbar-track { background: var(--term-sb-track); }
+.attack-terminal-body.terminal-scroll::-webkit-scrollbar-thumb { background: var(--term-sb-thumb); }
+
 /* Hide scrollbar but keep scrollability (used by the nav cluster row) */
 .no-scrollbar {
   -ms-overflow-style: none;

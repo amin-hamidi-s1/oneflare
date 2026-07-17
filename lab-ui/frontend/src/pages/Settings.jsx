@@ -7,6 +7,7 @@ import {
 import Badge from '../components/Badge.jsx'
 import { SCENARIOS } from '../data/scenarios.js'
 import TargetBar from '../components/TargetBar.jsx'
+import DeployKnowledgeObjects from '../components/DeployKnowledgeObjects.jsx'
 import { getMe } from '../lib/session.js'
 
 const STORAGE_KEYS = {
@@ -690,6 +691,9 @@ export default function Settings() {
 
       {/* Section 0: Lab Identity — multi-tenant relay registration */}
       <LabIdentitySection serverConfig={serverConfig} />
+
+      {/* Section 0a: Deploy the lab's knowledge objects to your own S1 site */}
+      <DeployKnowledgeObjects />
 
       {/* Section 0b: Default run target — admin-only */}
       <DefaultRunTargetSection />
