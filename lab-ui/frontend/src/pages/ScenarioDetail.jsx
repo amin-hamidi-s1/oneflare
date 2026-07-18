@@ -475,6 +475,12 @@ export default function ScenarioDetail() {
     }
   }, [id, session, sessionLoaded, serverConfig, serverConfigLoaded, navigate])
 
+  // Always open a scenario at the top of the page. SPA navigation (prev/next
+  // links) otherwise preserves the previous scroll position.
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [id])
+
   useEffect(() => {
     return () => {
       wsRef.current?.close()
@@ -659,6 +665,27 @@ export default function ScenarioDetail() {
             </h1>
             <p className="text-slate-400 mt-1.5 leading-relaxed">{scenario.shortDescription}</p>
           </div>
+
+          {/* Quick Run — fire the attack without scrolling to the Run Attack tab.
+              Mirrors the primary run button; disabled until a CF domain is set. */}
+          <button
+            onClick={() => { setActiveTab('run'); handleRun() }}
+            disabled={!isConfigured && !isRunning}
+            title={!isConfigured ? 'Set your Cloudflare domain in Settings first' : undefined}
+            className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 ${
+              isRunning
+                ? 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'
+                : isConfigured
+                ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 shadow-lg shadow-orange-500/20'
+                : 'bg-white/5 text-slate-500 cursor-not-allowed border border-slate-700'
+            }`}
+          >
+            {isRunning ? (
+              <><Square className="w-4 h-4" /> Stop Attack</>
+            ) : (
+              <><Play className="w-4 h-4" /> Run Attack</>
+            )}
+          </button>
         </div>
       </div>
 

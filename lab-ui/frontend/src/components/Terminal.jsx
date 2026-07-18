@@ -30,6 +30,10 @@ export default function Terminal({ lines = [], isRunning = false, title = 'Termi
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
+    // Only follow output once there's something to follow — otherwise the empty
+    // terminal (bottom of a long page) scrolls itself into view on mount and
+    // drags the whole page down when Run Attack is the default tab.
+    if (lines.length === 0) return
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [lines])
 
