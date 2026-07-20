@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
+import { Zap } from 'lucide-react'
 import ScenarioCard from '../components/ScenarioCard.jsx'
+import RunAllModal from '../components/RunAllModal.jsx'
 import { SCENARIOS } from '../data/scenarios.js'
 import { getMe, dnsAllowed } from '../lib/session.js'
 
@@ -28,6 +30,7 @@ function SectionDivider({ label, accent = false }) {
 export default function Scenarios() {
   const location = useLocation()
   const [allowDns, setAllowDns] = useState(false)
+  const [runAllOpen, setRunAllOpen] = useState(false)
 
   // react-router doesn't auto-scroll to a hash on navigation — the homepage's
   // "Campaigns" tile links here with #campaigns, so scroll it into view.
@@ -53,11 +56,21 @@ export default function Scenarios() {
   return (
     <div className="page-enter space-y-8">
       {/* Page header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-100">Attack Scenarios</h1>
-        <p className="text-sm text-slate-400 mt-1">
-          Single-technique quick runs and full multi-phase adversary campaigns — choose your depth.
-        </p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-100">Attack Scenarios</h1>
+          <p className="text-sm text-slate-400 mt-1">
+            Single-technique quick runs and full multi-phase adversary campaigns — choose your depth.
+          </p>
+        </div>
+        <button
+          onClick={() => setRunAllOpen(true)}
+          disabled={quickScenarios.length === 0}
+          className="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-lg shadow-orange-500/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Zap className="w-4 h-4" />
+          Run All Attacks
+        </button>
       </div>
 
       {/* Section A — Quick Scenarios */}
@@ -87,6 +100,10 @@ export default function Scenarios() {
           ))}
         </div>
       </section>
+
+      {runAllOpen && (
+        <RunAllModal scenarios={quickScenarios} onClose={() => setRunAllOpen(false)} />
+      )}
     </div>
   )
 }
