@@ -21,6 +21,9 @@ export function buildRunConfig(serverConfig) {
     delay: parseFloat(ls('oneflare_attack_delay') || String(serverConfig?.delay ?? '0.5')),
     jitter: parseFloat(ls('oneflare_attack_jitter') || String(serverConfig?.jitter ?? '0.3')),
     gateway_doh_url: ls('oneflare_cf_gateway_doh_url') || serverConfig?.gateway_doh_url || '',
+    // Sent so the backend can verify BYOC targets (a host in a Cloudflare zone
+    // this token controls) before running against a non-lab host.
+    cf_api_token: ls('oneflare_cf_api_token'),
   }
 }
 
