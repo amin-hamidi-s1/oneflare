@@ -830,10 +830,15 @@ export default function Settings() {
             }
           />
 
-          {/* Target URL overrides — optional; override the domain-derived defaults */}
+          {/* Target URL overrides — these ARE the attack targets, per role */}
           <div className="rounded-lg bg-white/3 border border-white/10 p-3 flex gap-2 text-xs text-slate-400">
             <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-            Shop / Portal / API URLs default to <span className="font-mono">shop|portal|api.&lt;Domain&gt;</span> above. Set them only to point at a different host.
+            <span>
+              These are the <span className="text-slate-300 font-semibold">attack targets</span> — every scenario fires at one
+              of these three hosts (DNS Tunneling is the exception; it uses the Gateway DoH URL below). They default to{' '}
+              <span className="font-mono">shop|portal|api.&lt;Domain&gt;</span> — set them to point the scripts at your own
+              Cloudflare-proxied hosts. On the shared console, a custom host must be one your Cloudflare API token controls.
+            </span>
           </div>
           <Field
             label="Shop URL"
@@ -841,6 +846,7 @@ export default function Settings() {
             value={settings.shop_url}
             onChange={handleChange}
             placeholder={`https://shop.${settings.cf_domain || 'one-flare.com'}`}
+            note="Attacked by: SQL Injection, XSS, and Path Traversal — plus the storefront login in Credential Attacks. Multi-phase campaigns (CTF / Financial / Healthcare / SaaS) hit it too."
           />
           <Field
             label="Portal URL"
@@ -848,6 +854,7 @@ export default function Settings() {
             value={settings.portal_url}
             onChange={handleChange}
             placeholder={`https://portal.${settings.cf_domain || 'one-flare.com'}`}
+            note="Attacked by: Credential Stuffing / Brute Force against the Access (ZTNA) login. Multi-phase campaigns hit it too."
           />
           <Field
             label="API URL"
@@ -855,6 +862,7 @@ export default function Settings() {
             value={settings.api_url}
             onChange={handleChange}
             placeholder={`https://api.${settings.cf_domain || 'one-flare.com'}`}
+            note="Attacked by: Data Exfiltration, AI / Bot Scraping, and Prompt Injection. Multi-phase campaigns hit it too."
           />
 
           {/* Test connection */}
