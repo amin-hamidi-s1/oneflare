@@ -198,6 +198,41 @@ It **prints the remaining manual steps** at the end:
    ```
 2. **Logpush → SentinelOne** — see step 4 below.
 
+### 2b. (Recommended) Use the SoleDrop Worker as your target baseline
+
+Instead of the three `novamind-*` Workers, you can deploy the **SoleDrop** Worker —
+a single self-contained `worker.js` that serves the entire attack surface in one
+place (storefront + search + reviews, `/login`, the Concierge chat, and the
+`/api/v1/*` customer/admin/chat endpoints). It's the exact target the reference lab
+runs against, so the scenarios work against it out of the box.
+
+**Repo:** https://github.com/mihir-s1/soledrop-worker (public — its README lists
+every route)
+
+1. Clone it and deploy to **your** Cloudflare account:
+   ```bash
+   git clone https://github.com/mihir-s1/soledrop-worker
+   cd soledrop-worker && npm install
+   npx wrangler kv namespace create INCIDENT_KV
+   npx wrangler kv namespace create INCIDENT_KV --preview
+   # paste both ids into wrangler.toml → [[kv_namespaces]]
+   npx wrangler secret put SECRET_KEY     # openssl rand -hex 32
+   npx wrangler secret put APP_PASSWORD   # storefront password
+   npx wrangler secret put INCIDENT_KEY   # any value (used to flip incident mode)
+   npx wrangler deploy
+   ```
+2. **Bind a proxied domain** so WAF + Logpush apply — in the Cloudflare dashboard
+   (Workers & Pages → the worker → Settings → Domains & Routes) add a custom domain,
+   e.g. `shop.<your-domain>`. One Worker serves every route, so a single hostname is
+   enough.
+3. **Point OneFlare at it** — in the console, **Settings → Cloudflare Configuration**,
+   set the **Shop / Portal / API URL** overrides to that host. Because one Worker
+   serves the storefront, login, and the APIs, all three overrides can be the *same*
+   hostname (e.g. `https://shop.<your-domain>`). Save, then run scenarios against it.
+
+> The endpoint requirements table below still applies if you build your *own* app
+> instead — but the SoleDrop Worker already implements all of them.
+
 ### 3. Run the console
 
 ```bash
