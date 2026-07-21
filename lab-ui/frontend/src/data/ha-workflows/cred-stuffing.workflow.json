@@ -1,6 +1,6 @@
 {
-  "name": "OneFlare Golden Response — Cred-Stuffing (portal.soledrop.co)",
-  "description": "GOLDEN reference response playbook for the OneFlare lab — the template every other scenario playbook copies. Fires on the CF-Access-CredStuffing scheduled STAR alert and runs the 4-step formula: (1) ENRICH+INVESTIGATE — read src_ip straight off the alert observable (the detection's entityMappings projects src_ip+host onto the alert, so no query is needed for the IP) then run ONE native SentinelOne async PowerQuery (init-query -> query-status -> DV events) for corroborating evidence (failed-login count, distinct UAs, cross-surface hits); (2) THREAT INTEL — VirusTotal (primary verdict) + AbuseIPDB (secondary) native lookups on src_ip; (3) DECIDE — cred-stuffing needs containment, so post an interactive Slack Block Kit message (evidence + FP caveat + Block/Dismiss buttons), wait for the click, branch on it; (4) ACT+WRITE BACK — APPROVED: Cloudflare IP Access Rule block -> Slack chat.update -> S1 Add Note -> verdict (True Positive Malware only if VT returned malicious, else Alert Status In Progress); DISMISSED: Slack chat.update -> S1 Add Note -> False Positive Undefined. Every destructive action is gated on the Slack approval AND (for the TP verdict) on an independent threat-intel malicious verdict, per evidence discipline. MITRE T1110.004 / T1110.001. SETUP BEFORE IMPORT: bind Slack, Cloudflare, SentinelOne (Mgmt) and SentinelOne (Unified Alerts) connections; for enrichment create free API-key connections for VirusTotal (https://www.virustotal.com/gui/join-us) and AbuseIPDB (https://www.abuseipdb.com/register) and bind them in Hyperautomation -> Integrations. Slack + S1-alert reuse the reference playbook's real connection IDs; Cloudflare / S1-Mgmt / VirusTotal / AbuseIPDB are left connection_id:null to bind after import. Import lands as a Private Draft owned by the token user — publish in the same step and use a personal Console User token for UI visibility.",
+  "name": "CF-Access-CredStuffing-Response",
+  "description": "SOAR response for credential stuffing / brute-force login abuse. Triggered by the CF-Access-CredStuffing detection. (1) ENRICH — read src_ip from the alert (entity-mapped) and run a SentinelOne PowerQuery for failed-login count, distinct User-Agents, cross-surface hits. (2) THREAT INTEL — VirusTotal (primary) + AbuseIPDB reputation on src_ip. (3) DECIDE — post an interactive Slack message (evidence + false-positive caveat + Block/Dismiss buttons) and wait for the analyst. (4) RESPOND + CASE UPDATE — APPROVE: block src_ip at the Cloudflare edge (IP Access Rule) -> Slack update -> alert note -> analyst verdict (True Positive Malware only on a malicious threat-intel verdict, else Alert Status In Progress); DISMISS: note + False Positive. Containment is gated on explicit analyst approval and, for the TP verdict, on an independent threat-intel verdict. PREREQUISITES: bind SentinelOne, Slack and Cloudflare connections + free VirusTotal (https://www.virustotal.com/gui/join-us) and AbuseIPDB (https://www.abuseipdb.com/register) API keys; import with a personal Console User token and publish in the same step.",
   "notes": [],
   "actions": [
     {
@@ -31,7 +31,7 @@
           ]
         },
         "state": "active",
-        "description": "TRIGGER: fire automatically when the CF-Access-CredStuffing scheduled STAR detection raises an alert (event alert / CREATE, filtered by exact rule name). Safe to auto-run because the only destructive action (Cloudflare block) is gated behind an explicit Slack analyst approval downstream.",
+        "description": "TRIGGER: fire automatically when the CF-Access-CredStuffing detection raises an alert (event alert / CREATE, matched on rule name 'CF-Access-CredStuffing — Login Brute Force / Credential Stuffing on portal.soledrop.co'). Safe to auto-run — the only destructive action (Cloudflare block) is gated behind explicit Slack analyst approval downstream.",
         "client_data": {
           "position": {
             "x": 0.0,
@@ -727,7 +727,7 @@
           "url": "{{Connection.protocol}}{{Connection.url}}/web/api/v2.0/threats",
           "url_path": "/web/api/v2.0/threats",
           "url_prefix": null,
-          "payload": "{\n  \"data\": { \"text\": \"Analyst {{wait-for-slack.body.user.username}} APPROVED Cloudflare block of {{local_var.src_ip}}. Evidence: {{get-dv-events.body.data[0].failed_logins}} failed /login (401/403/429) from {{get-dv-events.body.data[0].distinct_uas}} distinct UAs; VirusTotal malicious={{virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious}}, AbuseIPDB={{abuseipdb-check-ip.body.data.abuseConfidenceScore}}. Playbook: OneFlare Golden Cred-Stuffing Response.\" },\n  \"filter\": { \"ids\": [ \"{{singularity-response-trigger.data.id}}\" ] }\n}",
+          "payload": "{\n  \"data\": { \"text\": \"Analyst {{wait-for-slack.body.user.username}} APPROVED Cloudflare block of {{local_var.src_ip}}. Evidence: {{get-dv-events.body.data[0].failed_logins}} failed /login (401/403/429) from {{get-dv-events.body.data[0].distinct_uas}} distinct UAs; VirusTotal malicious={{virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious}}, AbuseIPDB={{abuseipdb-check-ip.body.data.abuseConfidenceScore}}. Playbook: OneFlare Cred-Stuffing Response.\" },\n  \"filter\": { \"ids\": [ \"{{singularity-response-trigger.data.id}}\" ] }\n}",
           "parameters": [],
           "retry_on_status_code": null,
           "retry_on_status_codes": [
@@ -1012,7 +1012,7 @@
           "url": "{{Connection.protocol}}{{Connection.url}}/web/api/v2.0/threats",
           "url_path": "/web/api/v2.0/threats",
           "url_prefix": null,
-          "payload": "{\n  \"data\": { \"text\": \"Analyst {{wait-for-slack.body.user.username}} DISMISSED as false positive. No Cloudflare block applied. Rationale: assessed benign (likely shared VPN/NAT egress or a locked-out legitimate user). src_ip {{local_var.src_ip}}; VirusTotal malicious={{virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious}}. Playbook: OneFlare Golden Cred-Stuffing Response.\" },\n  \"filter\": { \"ids\": [ \"{{singularity-response-trigger.data.id}}\" ] }\n}",
+          "payload": "{\n  \"data\": { \"text\": \"Analyst {{wait-for-slack.body.user.username}} DISMISSED as false positive. No Cloudflare block applied. Rationale: assessed benign (likely shared VPN/NAT egress or a locked-out legitimate user). src_ip {{local_var.src_ip}}; VirusTotal malicious={{virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious}}. Playbook: OneFlare Cred-Stuffing Response.\" },\n  \"filter\": { \"ids\": [ \"{{singularity-response-trigger.data.id}}\" ] }\n}",
           "parameters": [],
           "retry_on_status_code": null,
           "retry_on_status_codes": [

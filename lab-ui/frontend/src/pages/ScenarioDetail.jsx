@@ -147,7 +147,7 @@ function WorkflowJsonPanel({ workflowKey, filename }) {
 // "Setup — before you import" — richer prerequisite panel for playbooks that define
 // haPlaybook.setup (connections to bind + free third-party API keys to sign up for
 // before importing). Falls back to the plain connections pill list (below) when a
-// playbook hasn't been upgraded to the golden template's `setup` shape yet.
+// playbook hasn't been upgraded to the shared response `setup` shape yet.
 function SetupPanel({ setup }) {
   return (
     <div className="rounded-xl bg-[#1a0a2e] border border-[#2d1b4e] p-5">
@@ -789,7 +789,7 @@ export default function ScenarioDetail() {
                   <p className="text-sm text-slate-300 leading-relaxed">{haPlaybook.why}</p>
                 </div>
 
-                {/* Setup — before you import (golden-template playbooks) — falls back to the
+                {/* Setup — before you import (response playbooks) — falls back to the
                     plain connections pill list for playbooks that haven't defined `setup` yet. */}
                 {haPlaybook.setup ? (
                   <SetupPanel setup={haPlaybook.setup} />

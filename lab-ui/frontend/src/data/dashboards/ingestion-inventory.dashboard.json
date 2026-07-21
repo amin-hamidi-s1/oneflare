@@ -1,19 +1,83 @@
 {
+  "configType": "TABBED",
+  "name": "Cloudflare Ingestion",
   "duration": "24h",
-  "description": "Cloudflare data ingestion inventory - what is flowing into the SDL, by Logpush dataset and OCSF class.",
-  "graphs": [
+  "description": "Cloudflare Logpush ingestion inventory for the SoleDrop estate — what is arriving in the SDL, by Logpush dataset and OCSF class, with volume trend and top hosts. Use it to confirm every Cloudflare source is flowing and being parsed to OCSF.",
+  "tabs": [
     {
-      "title": "Cloudflare Data Ingestion Inventory",
-      "graphStyle": "markdown",
-      "markdown": "One row per **Data Source x Logpush dataset x OCSF class** landing in the SDL for the selected time range. Use it to confirm every Cloudflare Logpush source is arriving and being parsed to OCSF. New datasets (HTTP Requests, Firewall Events, Access) appear automatically - no filter is hardcoded. **Events = 0 rows** means nothing arrived in the window; widen the time picker before assuming an ingestion outage.",
-      "layout": { "w": 60, "h": 4, "x": 0, "y": 0 }
-    },
-    {
-      "title": "Cloudflare Data Ingestion Inventory (by dataset + OCSF class)",
-      "graphStyle": "table",
-      "showBarsColumn": "true",
-      "query": "dataSource.vendor = \"Cloudflare\"\n| group events = count(), first_ns = min(timestamp), last_ns = max(timestamp), parser = any(unmapped.parser) by vendor = dataSource.vendor, dataset = dataSource.cloudflare_dataset, ocsf_class = class_name, class_uid\n| let first_seen = simpledateformat(first_ns, 'yyyy-MM-dd HH:mm:ss z'), last_seen = simpledateformat(last_ns, 'yyyy-MM-dd HH:mm:ss z')\n| sort -events\n| columns \"Data Source\" = vendor, \"Logpush Dataset\" = dataset, \"OCSF Class\" = ocsf_class, \"Class UID\" = class_uid, \"Parser\" = parser, \"Events\" = events, \"First Seen\" = first_seen, \"Last Seen\" = last_seen",
-      "layout": { "w": 60, "h": 22, "x": 0, "y": 4 }
+      "tabName": "Ingestion Overview",
+      "graphs": [
+        {
+          "graphStyle": "markdown",
+          "title": "Cloudflare Data Ingestion Inventory",
+          "markdown": "Live inventory of Cloudflare Logpush flowing into the SDL, parsed to OCSF. The number tiles show total volume and per-dataset counts; the trend shows ingestion continuity over the window; the table is one row per **Logpush dataset x OCSF class** landing in the lake. New datasets appear automatically — nothing is hardcoded. A dataset reading **0** (or missing from the table) means nothing arrived in the window: widen the time picker before assuming an ingestion outage.",
+          "layout": { "w": 60, "h": 4, "x": 0, "y": 0 }
+        },
+        {
+          "graphStyle": "number",
+          "title": "Total Cloudflare Events",
+          "query": "dataSource.vendor = 'Cloudflare'\n| group c=count()\n| limit 1",
+          "layout": { "w": 12, "h": 8, "x": 0, "y": 4 },
+          "options": { "format": "commas", "color": "#f38020" },
+          "sparklineConfig": { "enabled": true }
+        },
+        {
+          "graphStyle": "number",
+          "title": "HTTP Requests",
+          "query": "dataSource.vendor = 'Cloudflare' dataSource.cloudflare_dataset = 'HTTP Requests'\n| group c=count()\n| limit 1",
+          "layout": { "w": 12, "h": 8, "x": 12, "y": 4 },
+          "options": { "format": "commas" }
+        },
+        {
+          "graphStyle": "number",
+          "title": "Firewall Events",
+          "query": "dataSource.vendor = 'Cloudflare' dataSource.cloudflare_dataset = 'Firewall events'\n| group c=count()\n| limit 1",
+          "layout": { "w": 12, "h": 8, "x": 24, "y": 4 },
+          "options": { "format": "commas" }
+        },
+        {
+          "graphStyle": "number",
+          "title": "Gateway DNS Queries",
+          "query": "dataSource.vendor = 'Cloudflare' dataSource.cloudflare_dataset = 'Gateway DNS'\n| group c=count()\n| limit 1",
+          "layout": { "w": 12, "h": 8, "x": 36, "y": 4 },
+          "options": { "format": "commas", "color": "#a855f7" }
+        },
+        {
+          "graphStyle": "number",
+          "title": "Distinct Datasets",
+          "query": "dataSource.vendor = 'Cloudflare' dataSource.cloudflare_dataset = *\n| group c=estimate_distinct(dataSource.cloudflare_dataset)\n| limit 1",
+          "layout": { "w": 12, "h": 8, "x": 48, "y": 4 }
+        },
+        {
+          "graphStyle": "stacked_bar",
+          "title": "Ingestion Volume Over Time by Dataset",
+          "query": "dataSource.vendor = 'Cloudflare' dataSource.cloudflare_dataset = *\n| group c=count() by dataset=dataSource.cloudflare_dataset, timestamp=timebucket('1h')\n| transpose dataset on timestamp",
+          "layout": { "w": 60, "h": 14, "x": 0, "y": 12 },
+          "xAxis": "time"
+        },
+        {
+          "graphStyle": "donut",
+          "title": "Events by Dataset",
+          "query": "dataSource.vendor = 'Cloudflare' dataSource.cloudflare_dataset = *\n| group c=count() by dataset=dataSource.cloudflare_dataset\n| filter c>0\n| columns dataset, c",
+          "layout": { "w": 20, "h": 16, "x": 0, "y": 26 },
+          "totalNumberConfig": { "enabled": true },
+          "dataLabelType": "VALUE"
+        },
+        {
+          "graphStyle": "",
+          "title": "Top Hosts by Event Volume",
+          "query": "dataSource.vendor = 'Cloudflare' http_request.url.hostname = *\n| group events=count() by host=http_request.url.hostname\n| sort -events\n| limit 15\n| columns \"Host\"=host, \"Events\"=events",
+          "layout": { "w": 40, "h": 16, "x": 20, "y": 26 },
+          "showBarsColumn": "true"
+        },
+        {
+          "graphStyle": "table",
+          "title": "Ingestion Inventory (by dataset + OCSF class)",
+          "query": "dataSource.vendor = 'Cloudflare'\n| group events = count(), first_ns = min(timestamp), last_ns = max(timestamp), parser = any(unmapped.parser) by vendor = dataSource.vendor, dataset = dataSource.cloudflare_dataset, ocsf_class = class_name, class_uid\n| let first_seen = simpledateformat(first_ns, 'yyyy-MM-dd HH:mm:ss z'), last_seen = simpledateformat(last_ns, 'yyyy-MM-dd HH:mm:ss z')\n| sort -events\n| columns \"Data Source\" = vendor, \"Logpush Dataset\" = dataset, \"OCSF Class\" = ocsf_class, \"Class UID\" = class_uid, \"Parser\" = parser, \"Events\" = events, \"First Seen\" = first_seen, \"Last Seen\" = last_seen",
+          "layout": { "w": 60, "h": 20, "x": 0, "y": 42 },
+          "showBarsColumn": "true"
+        }
+      ]
     }
   ]
 }

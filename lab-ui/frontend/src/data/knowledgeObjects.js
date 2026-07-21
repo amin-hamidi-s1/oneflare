@@ -105,19 +105,19 @@ export const CAMPAIGN_DETECTIONS = CAMPAIGN_DETECTION_DEFS.map(({ key, campaignI
 const NATIVE_CONNECTIONS = ['SentinelOne', 'Slack', 'Cloudflare', 'VirusTotal', 'AbuseIPDB']
 
 export const HA_WORKFLOWS = [
-  { type: 'ha', key: 'web-attacks',      scenarioIds: ['sqli', 'xss', 'traversal'], name: 'CF-WAF Web-Attack Response', detail: 'SQLi / XSS / Path-Traversal — parametrized', connections: NATIVE_CONNECTIONS },
-  { type: 'ha', key: 'cred-stuffing',    scenarioIds: ['cred'],       name: 'CF-Access Credential-Attack Response', detail: 'Brute force / credential stuffing', connections: NATIVE_CONNECTIONS },
-  { type: 'ha', key: 'data-exfil',       scenarioIds: ['exfil'],      name: 'CF-API Data-Exfiltration Response', detail: 'Bulk pull / endpoint enumeration', connections: NATIVE_CONNECTIONS },
-  { type: 'ha', key: 'bot-scraper',      scenarioIds: ['bot'],        name: 'CF-Bot Scraper Mitigation', detail: 'Low-BotScore automated scraping', connections: NATIVE_CONNECTIONS },
-  { type: 'ha', key: 'prompt-injection', scenarioIds: ['promptinj'],  name: 'CF-AI Prompt-Injection Response', detail: 'LLM jailbreak / injection probing', connections: NATIVE_CONNECTIONS },
-  { type: 'ha', key: 'dns-tunneling',    scenarioIds: ['dns'],        name: 'CF-Gateway DNS-Tunnel Response', detail: 'DNS tunneling / C2 beaconing', connections: NATIVE_CONNECTIONS },
-  { type: 'ha', key: 'ctf-campaign',     scenarioIds: ['ctf'],        name: 'SoleDrop CTF Campaign Response', detail: 'Operation Drop-Day Bot Swarm — recon → bot swarm → AI abuse → breakout', connections: NATIVE_CONNECTIONS },
+  { type: 'ha', key: 'web-attacks',      scenarioIds: ['sqli', 'xss', 'traversal'], name: 'CF-WAF-WebAttack-Response', detail: 'SQLi / XSS / Path-Traversal — parametrized', connections: NATIVE_CONNECTIONS },
+  { type: 'ha', key: 'cred-stuffing',    scenarioIds: ['cred'],       name: 'CF-Access-CredStuffing-Response', detail: 'Brute force / credential stuffing', connections: NATIVE_CONNECTIONS },
+  { type: 'ha', key: 'data-exfil',       scenarioIds: ['exfil'],      name: 'CF-API-Exfil-Response', detail: 'Bulk pull / endpoint enumeration', connections: NATIVE_CONNECTIONS },
+  { type: 'ha', key: 'bot-scraper',      scenarioIds: ['bot'],        name: 'CF-Bot-Scraper-Response', detail: 'Low-BotScore automated scraping', connections: NATIVE_CONNECTIONS },
+  { type: 'ha', key: 'prompt-injection', scenarioIds: ['promptinj'],  name: 'CF-AI-PromptInjection-Response', detail: 'LLM jailbreak / injection probing', connections: NATIVE_CONNECTIONS },
+  { type: 'ha', key: 'dns-tunneling',    scenarioIds: ['dns'],        name: 'CF-Gateway-DNSTunnel-Response', detail: 'DNS tunneling / C2 beaconing', connections: NATIVE_CONNECTIONS },
+  { type: 'ha', key: 'ctf-campaign',     scenarioIds: ['ctf'],        name: 'CF-Campaign-DropDaySwarm-Response', detail: 'Operation Drop-Day Bot Swarm — recon → bot swarm → AI abuse → breakout', connections: NATIVE_CONNECTIONS },
 ]
 
 // SDL dashboards (config-as-JSON put to /dashboards/<name>).
 export const DASHBOARDS = [
-  { type: 'dashboard', key: 'threat-detection',  name: 'Cloudflare Threat Detection', deployPath: '/dashboards/threat-detection',            description: threatDetectionDashboard.description || '', tabs: (threatDetectionDashboard.tabs || []).length,  dashboard: threatDetectionDashboard },
-  { type: 'dashboard', key: 'ingestion-inventory', name: 'Data Ingestion Inventory',  deployPath: '/dashboards/cloudflare-ingestion-inventory', description: ingestionInventoryDashboard.description || '', tabs: (ingestionInventoryDashboard.tabs || []).length, dashboard: ingestionInventoryDashboard },
+  { type: 'dashboard', key: 'threat-detection',  name: 'Cloudflare', deployPath: '/dashboards/threat-detection',            description: threatDetectionDashboard.description || '', tabs: (threatDetectionDashboard.tabs || []).length,  dashboard: threatDetectionDashboard },
+  { type: 'dashboard', key: 'ingestion-inventory', name: 'Cloudflare Ingestion',  deployPath: '/dashboards/cloudflare-ingestion-inventory', description: ingestionInventoryDashboard.description || '', tabs: (ingestionInventoryDashboard.tabs || []).length, dashboard: ingestionInventoryDashboard },
 ]
 
 // Lookups by scenario id — used by the Scenarios pages to pull canonical facts.

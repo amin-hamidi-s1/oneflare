@@ -1,6 +1,6 @@
 {
-  "name": "OneFlare Golden Response — Cred-Stuffing (portal.soledrop.co)",
-  "description": "GOLDEN reference response playbook for the OneFlare lab — the template every other scenario playbook copies. Fires on the CF-Access-CredStuffing scheduled STAR alert and runs the 4-step formula: (1) ENRICH+INVESTIGATE — read src_ip straight off the alert observable (the detection's entityMappings projects src_ip+host onto the alert, so no query is needed for the IP) then run ONE native SentinelOne async PowerQuery (init-query -> query-status -> DV events) for corroborating evidence (failed-login count, distinct UAs, cross-surface hits); (2) THREAT INTEL — VirusTotal (primary verdict) + AbuseIPDB (secondary) native lookups on src_ip; (3) DECIDE — cred-stuffing needs containment, so post an interactive Slack Block Kit message (evidence + FP caveat + Block/Dismiss buttons), wait for the click, branch on it; (4) ACT+WRITE BACK — APPROVED: Cloudflare IP Access Rule block -> Slack chat.update -> S1 Add Note -> verdict (True Positive Malware only if VT returned malicious, else Alert Status In Progress); DISMISSED: Slack chat.update -> S1 Add Note -> False Positive Undefined. Every destructive action is gated on the Slack approval AND (for the TP verdict) on an independent threat-intel malicious verdict, per evidence discipline. MITRE T1110.004 / T1110.001. SETUP BEFORE IMPORT: bind Slack, Cloudflare, SentinelOne (Mgmt) and SentinelOne (Unified Alerts) connections; for enrichment create free API-key connections for VirusTotal (https://www.virustotal.com/gui/join-us) and AbuseIPDB (https://www.abuseipdb.com/register) and bind them in Hyperautomation -> Integrations. Slack + S1-alert reuse the reference playbook's real connection IDs; Cloudflare / S1-Mgmt / VirusTotal / AbuseIPDB are left connection_id:null to bind after import. Import lands as a Private Draft owned by the token user — publish in the same step and use a personal Console User token for UI visibility.",
+  "name": "CF-Campaign-DropDaySwarm-Response",
+  "description": "SOAR response for the SoleDrop CTF campaign (Operation Drop-Day Bot Swarm). Triggered by any SoleDrop CTF box detection. (1) ENRICH — read src_ip from the alert (entity-mapped) and run a SentinelOne PowerQuery for JA3 fingerprint, distinct UAs, recon + injection signals. (2) THREAT INTEL — VirusTotal (primary) + AbuseIPDB reputation on src_ip. (3) DECIDE — post an interactive Slack message (evidence + false-positive caveat + Block/Dismiss buttons) and wait for the analyst. (4) RESPOND + CASE UPDATE — APPROVE: block src_ip at the Cloudflare edge (IP Access Rule) -> Slack update -> alert note -> analyst verdict (True Positive Malware only on a malicious threat-intel verdict, else Alert Status In Progress); DISMISS: note + False Positive. Containment is gated on explicit analyst approval and, for the TP verdict, on an independent threat-intel verdict. PREREQUISITES: bind SentinelOne, Slack and Cloudflare connections + free VirusTotal (https://www.virustotal.com/gui/join-us) and AbuseIPDB (https://www.abuseipdb.com/register) API keys; import with a personal Console User token and publish in the same step.",
   "notes": [],
   "actions": [
     {
@@ -18,8 +18,8 @@
             {
               "condition": {
                 "input_value": "name",
-                "compared_value": "CF-Access-CredStuffing — Login Brute Force / Credential Stuffing on portal.soledrop.co",
-                "comparison_operator": "equals"
+                "compared_value": "SoleDrop CTF",
+                "comparison_operator": "contains"
               },
               "is_disabled": false,
               "run_automatically": true,
@@ -31,7 +31,7 @@
           ]
         },
         "state": "active",
-        "description": "TRIGGER: fire automatically when the CF-Access-CredStuffing scheduled STAR detection raises an alert (event alert / CREATE, filtered by exact rule name). Safe to auto-run because the only destructive action (Cloudflare block) is gated behind an explicit Slack analyst approval downstream.",
+        "description": "TRIGGER: fire automatically when any SoleDrop CTF box detection raises an alert (event alert / CREATE, matched on rule name 'SoleDrop CTF'). Safe to auto-run — the only destructive action (Cloudflare block) is gated behind explicit Slack analyst approval downstream.",
         "client_data": {
           "position": {
             "x": 0.0,
@@ -82,7 +82,7 @@
             },
             {
               "name": "pq_query",
-              "value": "class_uid=4002 dataSource.cloudflare_dataset='HTTP Requests' | let src_ip = src_endpoint.ip | filter src_ip = '{{singularity-response-trigger.data.observables[0].value}}' | let status = unmapped.EdgeResponseStatus | filter status in ('401','403','429') | group failed_logins=count(), distinct_uas=estimate_distinct(http_request.user_agent), hosts=estimate_distinct(http_request.url.hostname), country=any(src_endpoint.location.country) by src_ip | sort -failed_logins | limit 1 | columns src_ip, failed_logins, distinct_uas, hosts, country",
+              "value": "class_uid=4002 dataSource.cloudflare_dataset='HTTP Requests' | let src_ip = src_endpoint.ip | filter src_ip = '{{singularity-response-trigger.data.observables[0].value}}' | group hits=count(), distinct_uas=estimate_distinct(http_request.user_agent), ja3=any(tls.ja3_hash.value), distinct_ja3=estimate_distinct(tls.ja3_hash.value), distinct_paths=estimate_distinct(http_request.url.path), recon_hits=count(http_request.url.path in ('/.env','/.git/HEAD','/api/v1/admin','/api/v1/training-data','/actuator/env')), injection_hits=count(http_request.url.url_string matches '(?i)(ignore previous instructions|do anything now|jailbreak|jndi:|169.254.169.254|etc/passwd|ognl)') by src_ip | sort -hits | limit 1 | columns src_ip, hits, distinct_uas, ja3, distinct_ja3, distinct_paths, recon_hits, injection_hits",
               "should_use_as_output": false,
               "is_secret": false
             }
@@ -446,7 +446,7 @@
           "url": "{{Connection.protocol}}{{Connection.url}}<@/api/chat.postMessage@>",
           "url_path": "/api/chat.postMessage",
           "url_prefix": null,
-          "payload": "{\n  \"channel\": \"{{local_var.channel_id}}\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"emoji\": true, \"text\": \"Credential Stuffing — portal.soledrop.co (HIGH)\" }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": { \"type\": \"mrkdwn\", \"text\": \"*A single source is brute-forcing / credential-stuffing the SoleDrop employee portal.*\\n\\n*Source IP:* `{{local_var.src_ip}}`  (geo: {{virustotal-search-ip.body.data.attributes.country}})\\n*VirusTotal:* {{virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious}} engines malicious\\n*AbuseIPDB:* {{abuseipdb-check-ip.body.data.abuseConfidenceScore}}/100 abuse confidence\\n*Failed logins (401/403/429 on /login):* *{{get-dv-events.body.data[0].failed_logins}}*\\n*Distinct User-Agents:* {{get-dv-events.body.data[0].distinct_uas}}\\n*ATT&CK:* T1110.004 / T1110.001\" }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": { \"type\": \"mrkdwn\", \"text\": \"*Before you block:* confirm `{{local_var.src_ip}}` is not a shared corporate VPN/NAT egress — many legitimate users behind one IP can also generate 401s. If it is, Dismiss.\" }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": { \"type\": \"mrkdwn\", \"text\": \"*Alert:* <{{Function.GET_MANAGEMENT_URL()}}/incidents/unified-alerts?alertId={{singularity-response-trigger.data.id}}|{{singularity-response-trigger.data.name}}>\" }\n    },\n    {\n      \"type\": \"actions\",\n      \"elements\": [\n        {\n          \"type\": \"button\",\n          \"text\": { \"type\": \"plain_text\", \"emoji\": true, \"text\": \"Block at Cloudflare\" },\n          \"style\": \"primary\",\n          \"value\": \"approved\"\n        },\n        {\n          \"type\": \"button\",\n          \"text\": { \"type\": \"plain_text\", \"emoji\": true, \"text\": \"Dismiss — False Positive\" },\n          \"style\": \"danger\",\n          \"value\": \"dismissed\"\n        }\n      ]\n    }\n  ]\n}",
+          "payload": "{\n  \"channel\": \"{{local_var.channel_id}}\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": {\n        \"type\": \"plain_text\",\n        \"emoji\": true,\n        \"text\": \"SoleDrop CTF — Operation Drop-Day Bot Swarm (HIGH)\"\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*SoleDrop CTF campaign activity from* `{{local_var.src_ip}}` *— agentic bot swarm across the SoleDrop attack surface.*\\n\\n*Source IP:* `{{local_var.src_ip}}`  (geo: {{virustotal-search-ip.body.data.attributes.country}})\\n*VirusTotal:* {{virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious}} engines malicious\\n*AbuseIPDB:* {{abuseipdb-check-ip.body.data.abuseConfidenceScore}}/100 abuse confidence\\n*JA3 fingerprint:* `{{get-dv-events.body.data[0].ja3}}` behind *{{get-dv-events.body.data[0].distinct_uas}}* distinct User-Agents (polymorphic-bot invariant)\\n*Recon hits (sensitive paths):* {{get-dv-events.body.data[0].recon_hits}}  |  *Injection/RCE markers:* {{get-dv-events.body.data[0].injection_hits}}\\n*Total requests / distinct paths:* {{get-dv-events.body.data[0].hits}} / {{get-dv-events.body.data[0].distinct_paths}}\\n*ATT&CK:* T1595 / T1190 / T1071 (+ ATLAS prompt injection)\"\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*Before you block:* confirm `{{local_var.src_ip}}` is not a shared corporate VPN/NAT egress or a sanctioned scanner. If it is, Dismiss.\"\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*Alert:* <{{Function.GET_MANAGEMENT_URL()}}/incidents/unified-alerts?alertId={{singularity-response-trigger.data.id}}|{{singularity-response-trigger.data.name}}>\"\n      }\n    },\n    {\n      \"type\": \"actions\",\n      \"elements\": [\n        {\n          \"type\": \"button\",\n          \"text\": {\n            \"type\": \"plain_text\",\n            \"emoji\": true,\n            \"text\": \"Block at Cloudflare\"\n          },\n          \"style\": \"primary\",\n          \"value\": \"approved\"\n        },\n        {\n          \"type\": \"button\",\n          \"text\": {\n            \"type\": \"plain_text\",\n            \"emoji\": true,\n            \"text\": \"Dismiss — False Positive\"\n          },\n          \"style\": \"danger\",\n          \"value\": \"dismissed\"\n        }\n      ]\n    }\n  ]\n}",
           "parameters": [],
           "retry_on_status_code": null,
           "retry_on_status_codes": [
@@ -608,7 +608,7 @@
           "url": "{{Connection.protocol}}{{Connection.url}}/client/v4/user/firewall/access_rules/rules",
           "url_path": "/client/v4/user/firewall/access_rules/rules",
           "url_prefix": null,
-          "payload": "{\n  \"mode\": \"block\",\n  \"configuration\": { \"target\": \"ip\", \"value\": \"{{local_var.src_ip}}\" },\n  \"notes\": \"OneFlare cred-stuffing auto-block — alert {{singularity-response-trigger.data.id}}\"\n}",
+          "payload": "{\n  \"mode\": \"block\",\n  \"configuration\": { \"target\": \"ip\", \"value\": \"{{local_var.src_ip}}\" },\n  \"notes\": \"OneFlare SoleDrop-CTF auto-block — alert {{singularity-response-trigger.data.id}}\"\n}",
           "parameters": [],
           "retry_on_status_code": null,
           "retry_on_status_codes": [
@@ -727,7 +727,7 @@
           "url": "{{Connection.protocol}}{{Connection.url}}/web/api/v2.0/threats",
           "url_path": "/web/api/v2.0/threats",
           "url_prefix": null,
-          "payload": "{\n  \"data\": { \"text\": \"Analyst {{wait-for-slack.body.user.username}} APPROVED Cloudflare block of {{local_var.src_ip}}. Evidence: {{get-dv-events.body.data[0].failed_logins}} failed /login (401/403/429) from {{get-dv-events.body.data[0].distinct_uas}} distinct UAs; VirusTotal malicious={{virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious}}, AbuseIPDB={{abuseipdb-check-ip.body.data.abuseConfidenceScore}}. Playbook: OneFlare Golden Cred-Stuffing Response.\" },\n  \"filter\": { \"ids\": [ \"{{singularity-response-trigger.data.id}}\" ] }\n}",
+          "payload": "{\n  \"data\": {\n    \"text\": \"Analyst {{wait-for-slack.body.user.username}} APPROVED Cloudflare block of {{local_var.src_ip}}. Evidence: SoleDrop CTF campaign — JA3 {{get-dv-events.body.data[0].ja3}} behind {{get-dv-events.body.data[0].distinct_uas}} distinct UAs, {{get-dv-events.body.data[0].recon_hits}} recon hits, {{get-dv-events.body.data[0].injection_hits}} injection/RCE markers across {{get-dv-events.body.data[0].distinct_paths}} paths; VirusTotal malicious={{virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious}}, AbuseIPDB={{abuseipdb-check-ip.body.data.abuseConfidenceScore}}. Playbook: OneFlare SoleDrop CTF Response.\"\n  },\n  \"filter\": {\n    \"ids\": [\n      \"{{singularity-response-trigger.data.id}}\"\n    ]\n  }\n}",
           "parameters": [],
           "retry_on_status_code": null,
           "retry_on_status_codes": [
@@ -1012,7 +1012,7 @@
           "url": "{{Connection.protocol}}{{Connection.url}}/web/api/v2.0/threats",
           "url_path": "/web/api/v2.0/threats",
           "url_prefix": null,
-          "payload": "{\n  \"data\": { \"text\": \"Analyst {{wait-for-slack.body.user.username}} DISMISSED as false positive. No Cloudflare block applied. Rationale: assessed benign (likely shared VPN/NAT egress or a locked-out legitimate user). src_ip {{local_var.src_ip}}; VirusTotal malicious={{virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious}}. Playbook: OneFlare Golden Cred-Stuffing Response.\" },\n  \"filter\": { \"ids\": [ \"{{singularity-response-trigger.data.id}}\" ] }\n}",
+          "payload": "{\n  \"data\": {\n    \"text\": \"Analyst {{wait-for-slack.body.user.username}} DISMISSED as false positive. No Cloudflare block applied. Rationale: assessed benign (likely a sanctioned scanner or shared corporate egress). src_ip {{local_var.src_ip}}; VirusTotal malicious={{virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious}}. Playbook: OneFlare SoleDrop CTF Response.\"\n  },\n  \"filter\": {\n    \"ids\": [\n      \"{{singularity-response-trigger.data.id}}\"\n    ]\n  }\n}",
           "parameters": [],
           "retry_on_status_code": null,
           "retry_on_status_codes": [

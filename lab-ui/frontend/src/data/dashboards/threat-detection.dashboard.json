@@ -1,15 +1,16 @@
 {
   "configType": "TABBED",
+  "name": "Cloudflare",
   "duration": "24h",
-  "description": "OneFlare \u2014 Cloudflare Threat Detection. WAF web attacks, credential attacks, DNS/C2 tunneling, and data exfil / bot / AI threats, from Cloudflare Logpush parsed to OCSF in the SDL.",
+  "description": "Cloudflare threat detection across the SoleDrop estate \u2014 WAF web attacks, credential attacks, DNS/C2 tunneling, and data exfiltration / bot / AI threats, from Cloudflare Logpush parsed to OCSF in the SDL.",
   "tabs": [
     {
       "tabName": "Threat Overview",
       "graphs": [
         {
           "graphStyle": "markdown",
-          "title": "OneFlare \u2014 Cloudflare Threat Detection",
-          "markdown": "Live view of the NovaMind attack surface on Cloudflare, parsed to OCSF in the SDL. **Attacks** are derived from Cloudflare's WAF ML attack scores (1-99, **lower = more malicious**) and Firewall-event blocks. Tabs drill into each scenario: web-app (WAF), credential, DNS/C2, and exfil/bot/AI. Zero rows = nothing in the window; widen the time picker.",
+          "title": "Cloudflare Threat Detection",
+          "markdown": "Live view of the SoleDrop attack surface on Cloudflare, parsed to OCSF in the SDL. **Attacks** are derived from Cloudflare's WAF ML attack scores (1-99, **lower = more malicious**) and Firewall-event blocks. Tabs drill into each scenario: web-app (WAF), credential, DNS/C2, and exfil/bot/AI. Zero rows = nothing in the window; widen the time picker.",
           "layout": {
             "w": 60,
             "h": 4,

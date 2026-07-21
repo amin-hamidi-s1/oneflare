@@ -9,7 +9,7 @@
     "expirationMode": "Permanent",
     "treatAsThreat": "UNDEFINED",
     "networkQuarantine": false,
-    "s1ql": "dataSource.name = 'Cloudflare' AND class_uid = 4002 AND http_request.url.path contains:anycase('/api/v1/chat') AND (number(unmapped.FirewallForAIInjectionScore) >= 50 OR http_request.url.url_string matches '(?i)(ignore (all )?previous instructions|do anything now|\\bDAN\\b|system override|unrestricted mode|jailbreak|\\$\\{jndi:|<\\|im_start\\|>|system prompt|SECRET_KEY|INCIDENT_KEY)' OR http_request.user_agent matches '(?i)\\$\\{(jndi|::-|lower:)')"
+    "s1ql": "dataSource.name = 'Cloudflare' AND class_uid = 4002 AND http_request.url.path contains:anycase('/api/v1/chat') AND (http_request.url.url_string matches '(?i)(ignore (all )?previous instructions|do anything now|\\bDAN\\b|system override|unrestricted mode|jailbreak|\\$\\{jndi:|<\\|im_start\\|>|system prompt|SECRET_KEY|INCIDENT_KEY)' OR http_request.user_agent matches '(?i)\\$\\{(jndi|::-|lower:)')"
   },
   "filter": {
     "accountIds": [

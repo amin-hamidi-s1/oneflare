@@ -35,7 +35,7 @@ const UNKNOWN_DEVICE =
   'network-edge / IP-centric (Cloudflare block or challenge), not EDR host isolation.'
 
 // ---------------------------------------------------------------------------
-// Golden 4-step diagram builder — every scenario below (and cred-stuffing,
+// Shared 4-step diagram builder — every scenario below (and cred-stuffing,
 // defined further down) instantiates this same shape: (1) read src_ip off the
 // alert + one native SentinelOne PowerQuery for corroborating evidence,
 // (2) VirusTotal + AbuseIPDB threat intel, (3) an interactive Slack approval
@@ -43,7 +43,7 @@ const UNKNOWN_DEVICE =
 // and (for the verdict) on an independent malicious TI verdict.
 // ---------------------------------------------------------------------------
 
-function goldenDiagram({ triggerLabel, triggerDetail, pqLabel, pqDetail, fpCaveat }) {
+function responseDiagram({ triggerLabel, triggerDetail, pqLabel, pqDetail, fpCaveat }) {
   return {
     blocks: [
       { kind: 'trigger', label: triggerLabel, detail: triggerDetail },
@@ -91,9 +91,9 @@ function goldenDiagram({ triggerLabel, triggerDetail, pqLabel, pqDetail, fpCavea
   }
 }
 
-// Setup panel content — identical shape/content across every golden-template
-// playbook (matches the cred-stuffing reference exactly).
-const GOLDEN_SETUP = {
+// Setup panel content — identical shape/content across every response
+// playbook (matches the cred-stuffing playbook exactly).
+const RESPONSE_SETUP = {
   intro:
     'This playbook uses native SentinelOne Hyperautomation integrations. Before importing, ' +
     'bind these console connections:',
@@ -109,14 +109,14 @@ const GOLDEN_SETUP = {
     'workflow is visible/editable in the HA console.',
 }
 
-const GOLDEN_CONNECTIONS = ['SentinelOne', 'Slack', 'Cloudflare', 'VirusTotal', 'AbuseIPDB']
+const NATIVE_CONNECTIONS = ['SentinelOne', 'Slack', 'Cloudflare', 'VirusTotal', 'AbuseIPDB']
 
 // ---------------------------------------------------------------------------
 // web-attacks — shared by sqli / xss / traversal
 // ---------------------------------------------------------------------------
 
 function webAttacksDiagram(triggerLabel) {
-  return goldenDiagram({
+  return responseDiagram({
     triggerLabel,
     triggerDetail: 'WAF ML flags SQLi/XSS/traversal on shop.soledrop.co → src_ip (alert observable / entityMappings)',
     pqLabel: 'WAF Attack Enrichment',
@@ -128,7 +128,7 @@ function webAttacksDiagram(triggerLabel) {
 const WEB_ATTACKS_WHY =
   'One parametrized workflow (`web-attacks`) answers all three Cloudflare WAF ML detections — ' +
   'SQLi, XSS, and Path Traversal/LFI share a `CF-WAF-` alert-name prefix, so a single flow ' +
-  'runs the golden 4-step formula against the offending src_ip rather than duplicating the same ' +
+  'runs the same 4-step formula against the offending src_ip rather than duplicating the same ' +
   'logic three times: (1) read src_ip off the alert and run one native SentinelOne PowerQuery for ' +
   'attack-request count, worst WAF ML score, and a sample URI/method; (2) VirusTotal + AbuseIPDB ' +
   'threat intel; (3) an interactive Slack approval (wait_for_slack) — the workflow pauses and only ' +
@@ -139,10 +139,10 @@ const WEB_ATTACKS_WHY =
 const webAttacksEntry = (triggerLabel) => ({
   workflowKey: 'web-attacks',
   workflowFile: 'web-attacks.workflow.json',
-  title: 'Web-Attack (WAF) Response — shared workflow (golden template)',
+  title: 'Web-Attack (WAF) Response — shared workflow',
   why: WEB_ATTACKS_WHY,
-  connections: GOLDEN_CONNECTIONS,
-  setup: GOLDEN_SETUP,
+  connections: NATIVE_CONNECTIONS,
+  setup: RESPONSE_SETUP,
   diagram: webAttacksDiagram(triggerLabel),
 })
 
@@ -150,20 +150,19 @@ const webAttacksEntry = (triggerLabel) => ({
 // cred-stuffing
 // ---------------------------------------------------------------------------
 
-// GOLDEN reference playbook — the template every other scenario playbook copies.
-// 4-step formula: (1) enrich/investigate off the alert with one native S1 PowerQuery,
-// (2) independent third-party threat intel (VirusTotal primary, AbuseIPDB secondary),
-// (3) decide via an interactive Slack approval (containment always needs a human click),
-// (4) act + write back — Cloudflare block only on approval, TRUE_POSITIVE verdict only
-// on an independent malicious verdict, everything logged back onto the alert.
-// Source: hyperautomation/cred-stuffing/cred-stuffing.golden.workflow.json (19 nodes).
+// Response playbook for CF-Access-CredStuffing-Response. 4-step formula: (1) enrich/
+// investigate off the alert with one native S1 PowerQuery, (2) independent third-party
+// threat intel (VirusTotal primary, AbuseIPDB secondary), (3) decide via an interactive
+// Slack approval (containment always needs a human click), (4) act + write back —
+// Cloudflare block only on approval, TRUE_POSITIVE verdict only on an independent
+// malicious verdict, everything logged back onto the alert.
+// Source: hyperautomation/cred-stuffing/cred-stuffing.workflow.json (19 nodes).
 const credStuffingEntry = {
   workflowKey: 'cred-stuffing',
   workflowFile: 'cred-stuffing.workflow.json',
-  title: 'Credential Stuffing / Brute-Force Response (golden template)',
+  title: 'Credential Stuffing / Brute-Force Response',
   why:
-    'This is the OneFlare golden reference playbook — the 4-step formula every other scenario ' +
-    'copies. It reads src_ip straight off the alert (entityMappings), then runs ONE native ' +
+    'This playbook reads src_ip straight off the alert (entityMappings), then runs ONE native ' +
     'SentinelOne PowerQuery (async DV API: init-query → query-status → events) for corroborating ' +
     'evidence, rather than re-deriving the IP with extra queries. Independent third-party threat ' +
     'intel (VirusTotal primary, AbuseIPDB secondary) is gathered before any decision is made. ' +
@@ -250,18 +249,18 @@ const credStuffingEntry = {
 const dataExfilEntry = {
   workflowKey: 'data-exfil',
   workflowFile: 'data-exfil.workflow.json',
-  title: 'Data-Exfiltration Response (api.soledrop.co) — golden template',
+  title: 'Data-Exfiltration Response (api.soledrop.co)',
   why:
-    'Runs the golden 4-step formula against the source pulling data in bulk: (1) read src_ip off ' +
+    'Runs the same 4-step formula against the source pulling data in bulk: (1) read src_ip off ' +
     'the alert and run one native SentinelOne PowerQuery for bytes pulled, sensitive endpoints ' +
     'enumerated, and the largest response; (2) VirusTotal + AbuseIPDB threat intel; (3) an ' +
     'interactive Slack approval (wait_for_slack) — the workflow pauses and only blocks on an ' +
     'explicit "Block at Cloudflare" click; (4) the verdict write-back is itself evidence-gated — ' +
     'True Positive Malware only fires when VirusTotal independently confirms the IP as malicious, ' +
     'otherwise the alert is left In Progress (SUSPICIOUS — pending confirmation). ' + UNKNOWN_DEVICE,
-  connections: GOLDEN_CONNECTIONS,
-  setup: GOLDEN_SETUP,
-  diagram: goldenDiagram({
+  connections: NATIVE_CONNECTIONS,
+  setup: RESPONSE_SETUP,
+  diagram: responseDiagram({
     triggerLabel: 'CF-API-BulkExfil — HIGH/CRITICAL',
     triggerDetail: 'sensitive-endpoint volume / oversized responses on api.soledrop.co → src_ip (alert observable / entityMappings)',
     pqLabel: 'Bulk-Exfil Enrichment',
@@ -277,9 +276,9 @@ const dataExfilEntry = {
 const botScraperEntry = {
   workflowKey: 'bot-scraper',
   workflowFile: 'bot-scraper.workflow.json',
-  title: 'Bot / Scraper Response (BotScore) — golden template',
+  title: 'Bot / Scraper Response (BotScore)',
   why:
-    'Runs the golden 4-step formula against the source Cloudflare\'s ML flagged as automated — ' +
+    'Runs the same 4-step formula against the source Cloudflare\'s ML flagged as automated — ' +
     'keyed on BotScore, never the User-Agent, which validated scraper hits trivially spoofed ' +
     '(Wrath-AIO, libwww-perl, PhantomJS): (1) read src_ip off the alert and run one native ' +
     'SentinelOne PowerQuery for low-BotScore request count, distinct paths crawled, and average ' +
@@ -288,9 +287,9 @@ const botScraperEntry = {
     'click; (4) the verdict write-back is itself evidence-gated — True Positive Malware only fires ' +
     'when VirusTotal independently confirms the IP as malicious, otherwise the alert is left In ' +
     'Progress (SUSPICIOUS — pending confirmation). ' + UNKNOWN_DEVICE,
-  connections: GOLDEN_CONNECTIONS,
-  setup: GOLDEN_SETUP,
-  diagram: goldenDiagram({
+  connections: NATIVE_CONNECTIONS,
+  setup: RESPONSE_SETUP,
+  diagram: responseDiagram({
     triggerLabel: 'CF-BotMgmt-LowBotScoreScraper — MED/HIGH',
     triggerDetail: 'BotScore ≤ 29, ≥20 requests on shop.soledrop.co → src_ip (alert observable / entityMappings)',
     pqLabel: 'Bot-Scraper Enrichment',
@@ -306,9 +305,9 @@ const botScraperEntry = {
 const promptInjectionEntry = {
   workflowKey: 'prompt-injection',
   workflowFile: 'prompt-injection.workflow.json',
-  title: 'LLM Prompt-Injection Response (SoleDrop Concierge chat) — golden template',
+  title: 'LLM Prompt-Injection Response (SoleDrop Concierge chat)',
   why:
-    'Runs the golden 4-step formula against the source probing the AI concierge — the ' +
+    'Runs the same 4-step formula against the source probing the AI concierge — the ' +
     'network/identity-level half of defense-in-depth (it does not inspect prompt content): ' +
     '(1) read src_ip off the alert and run one native SentinelOne PowerQuery for injection-attempt ' +
     'count, max attack score, and a sample payload/User-Agent; (2) VirusTotal + AbuseIPDB threat ' +
@@ -317,9 +316,9 @@ const promptInjectionEntry = {
     'evidence-gated — True Positive Malware only fires when VirusTotal independently confirms the ' +
     'IP as malicious, otherwise the alert is left In Progress (SUSPICIOUS — pending confirmation). ' +
     UNKNOWN_DEVICE,
-  connections: GOLDEN_CONNECTIONS,
-  setup: GOLDEN_SETUP,
-  diagram: goldenDiagram({
+  connections: NATIVE_CONNECTIONS,
+  setup: RESPONSE_SETUP,
+  diagram: responseDiagram({
     triggerLabel: 'CF-FirewallForAI-PromptInjection — HIGH',
     triggerDetail: 'burst of chat POSTs to /api/v1/chat → src_ip (alert observable / entityMappings)',
     pqLabel: 'Prompt-Injection Enrichment',
@@ -335,18 +334,18 @@ const promptInjectionEntry = {
 const dnsTunnelingEntry = {
   workflowKey: 'dns-tunneling',
   workflowFile: 'dns-tunneling.workflow.json',
-  title: 'DNS Tunneling / C2 Beaconing Response — golden template',
+  title: 'DNS Tunneling / C2 Beaconing Response',
   why:
-    'Runs the golden 4-step formula against the source beaconing over Gateway DNS: (1) read ' +
+    'Runs the same 4-step formula against the source beaconing over Gateway DNS: (1) read ' +
     'src_ip off the alert and run one native SentinelOne PowerQuery for DNS query volume, distinct ' +
     'and long subdomains, and the suspected C2 domain; (2) VirusTotal + AbuseIPDB threat intel; ' +
     '(3) an interactive Slack approval (wait_for_slack) — the workflow pauses and only blocks on an ' +
     'explicit "Block at Cloudflare" click; (4) the verdict write-back is itself evidence-gated — ' +
     'True Positive Malware only fires when VirusTotal independently confirms the IP as malicious, ' +
     'otherwise the alert is left In Progress (SUSPICIOUS — pending confirmation). ' + UNKNOWN_DEVICE,
-  connections: GOLDEN_CONNECTIONS,
-  setup: GOLDEN_SETUP,
-  diagram: goldenDiagram({
+  connections: NATIVE_CONNECTIONS,
+  setup: RESPONSE_SETUP,
+  diagram: responseDiagram({
     triggerLabel: 'CF-Gateway-DNSTunnel — HIGH',
     triggerDetail: 'high-entropy / long-label DNS query clustering on Gateway DNS → src_ip (alert observable / entityMappings)',
     pqLabel: 'DNS-Tunnel Enrichment',
@@ -362,10 +361,10 @@ const dnsTunnelingEntry = {
 const ctfCampaignEntry = {
   workflowKey: 'ctf-campaign',
   workflowFile: 'ctf-campaign.workflow.json',
-  title: 'SoleDrop CTF Campaign Response (Operation Drop-Day Bot Swarm) — golden template',
+  title: 'SoleDrop CTF Campaign Response (Operation Drop-Day Bot Swarm)',
   why:
     'One workflow answers all 4 CTF boxes — every box\'s STAR/scheduled rule shares a "SoleDrop ' +
-    'CTF" alert-name prefix, so a single flow runs the golden 4-step formula against whichever ' +
+    'CTF" alert-name prefix, so a single flow runs the same 4-step formula against whichever ' +
     'box fires: (1) read src_ip off the alert and run one native SentinelOne PowerQuery for the ' +
     'JA3 fingerprint, distinct User-Agent count, and recon + injection/RCE signal counts; ' +
     '(2) VirusTotal + AbuseIPDB threat intel; (3) an interactive Slack approval (wait_for_slack) — ' +
@@ -373,9 +372,9 @@ const ctfCampaignEntry = {
     'verdict write-back is itself evidence-gated — True Positive Malware only fires when ' +
     'VirusTotal independently confirms the IP as malicious, otherwise the alert is left In ' +
     'Progress (SUSPICIOUS — pending confirmation). ' + UNKNOWN_DEVICE,
-  connections: GOLDEN_CONNECTIONS,
-  setup: GOLDEN_SETUP,
-  diagram: goldenDiagram({
+  connections: NATIVE_CONNECTIONS,
+  setup: RESPONSE_SETUP,
+  diagram: responseDiagram({
     triggerLabel: 'SoleDrop CTF — any box (1–4)',
     triggerDetail: 'name contains "SoleDrop CTF" → src_ip (alert observable / entityMappings)',
     pqLabel: 'CTF Campaign Enrichment',

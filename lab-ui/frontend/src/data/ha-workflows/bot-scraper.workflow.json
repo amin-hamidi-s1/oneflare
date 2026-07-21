@@ -1,6 +1,6 @@
 {
-  "name": "OneFlare Golden Response — Bot-Scraper (shop.soledrop.co)",
-  "description": "bot scraping response playbook (SoleDrop lab) — golden 4-step formula. (1) ENRICH+INVESTIGATE — read src_ip straight off the alert observable (the detection's entityMappings projects src_ip onto the alert, so no query is needed for the IP), then one native SentinelOne async PowerQuery (init-query -> query-status -> DV events) for low-BotScore request count, distinct paths, hit rate. (2) THREAT INTEL — VirusTotal (primary verdict) + AbuseIPDB (secondary) native lookups on src_ip. (3) DECIDE — post an interactive Slack Block Kit message (evidence + false-positive caveat + Block/Dismiss buttons), wait for the click, branch on it. (4) ACT+WRITE BACK — APPROVED: Cloudflare IP Access Rule block -> Slack chat.update -> S1 Add Note -> verdict (True Positive Malware only if VirusTotal returned malicious, else Alert Status In Progress); DISMISSED: Slack chat.update -> S1 Add Note -> False Positive Undefined. Every destructive action is gated on the Slack approval AND (for the TP verdict) on an independent threat-intel malicious verdict. MITRE T1595 / T1071. SETUP BEFORE IMPORT: bind Slack, Cloudflare, SentinelOne (Mgmt) and SentinelOne (Unified Alerts) connections; for enrichment create free API-key connections for VirusTotal (https://www.virustotal.com/gui/join-us) and AbuseIPDB (https://www.abuseipdb.com/register). Import with a personal Console User token and publish in the same step for UI visibility.",
+  "name": "CF-Bot-Scraper-Response",
+  "description": "SOAR response for automated bot scraping. Triggered by the CF-Bot-Scraper detection. (1) ENRICH — read src_ip from the alert (entity-mapped) and run a SentinelOne PowerQuery for low-BotScore request count, distinct paths, hit rate. (2) THREAT INTEL — VirusTotal (primary) + AbuseIPDB reputation on src_ip. (3) DECIDE — post an interactive Slack message (evidence + false-positive caveat + Block/Dismiss buttons) and wait for the analyst. (4) RESPOND + CASE UPDATE — APPROVE: block src_ip at the Cloudflare edge (IP Access Rule) -> Slack update -> alert note -> analyst verdict (True Positive Malware only on a malicious threat-intel verdict, else Alert Status In Progress); DISMISS: note + False Positive. Containment is gated on explicit analyst approval and, for the TP verdict, on an independent threat-intel verdict. PREREQUISITES: bind SentinelOne, Slack and Cloudflare connections + free VirusTotal (https://www.virustotal.com/gui/join-us) and AbuseIPDB (https://www.abuseipdb.com/register) API keys; import with a personal Console User token and publish in the same step.",
   "notes": [],
   "actions": [
     {
@@ -31,7 +31,7 @@
           ]
         },
         "state": "active",
-        "description": "TRIGGER: fire automatically when the CF-Bot-Scraper rule (shop.soledrop.co) raises an alert (event alert / CREATE, matched on rule name 'CF-Bot-Scraper — Low-BotScore Automated Scraping against shop.soledrop.co'). Safe to auto-run — the only destructive action (Cloudflare block) is gated behind an explicit Slack analyst approval downstream.",
+        "description": "TRIGGER: fire automatically when the CF-Bot-Scraper detection raises an alert (event alert / CREATE, matched on rule name 'CF-Bot-Scraper — Low-BotScore Automated Scraping against shop.soledrop.co'). Safe to auto-run — the only destructive action (Cloudflare block) is gated behind explicit Slack analyst approval downstream.",
         "client_data": {
           "position": {
             "x": 0.0,
@@ -727,7 +727,7 @@
           "url": "{{Connection.protocol}}{{Connection.url}}/web/api/v2.0/threats",
           "url_path": "/web/api/v2.0/threats",
           "url_prefix": null,
-          "payload": "{\n  \"data\": {\n    \"text\": \"Analyst {{wait-for-slack.body.user.username}} APPROVED Cloudflare block of {{local_var.src_ip}}. Evidence: {{get-dv-events.body.data[0].bot_requests}} likely-bot requests (BotScore <= 29, avg {{get-dv-events.body.data[0].avg_botscore}}) across {{get-dv-events.body.data[0].distinct_paths}} distinct paths, sample UA {{get-dv-events.body.data[0].sample_ua}}; VirusTotal malicious={{virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious}}, AbuseIPDB={{abuseipdb-check-ip.body.data.abuseConfidenceScore}}. Verdict: automated scraping (T1595 / T1071). Playbook: OneFlare Golden Bot-Scraper Response.\"\n  },\n  \"filter\": {\n    \"ids\": [\n      \"{{singularity-response-trigger.data.id}}\"\n    ]\n  }\n}",
+          "payload": "{\n  \"data\": {\n    \"text\": \"Analyst {{wait-for-slack.body.user.username}} APPROVED Cloudflare block of {{local_var.src_ip}}. Evidence: {{get-dv-events.body.data[0].bot_requests}} likely-bot requests (BotScore <= 29, avg {{get-dv-events.body.data[0].avg_botscore}}) across {{get-dv-events.body.data[0].distinct_paths}} distinct paths, sample UA {{get-dv-events.body.data[0].sample_ua}}; VirusTotal malicious={{virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious}}, AbuseIPDB={{abuseipdb-check-ip.body.data.abuseConfidenceScore}}. Verdict: automated scraping (T1595 / T1071). Playbook: OneFlare Bot-Scraper Response.\"\n  },\n  \"filter\": {\n    \"ids\": [\n      \"{{singularity-response-trigger.data.id}}\"\n    ]\n  }\n}",
           "parameters": [],
           "retry_on_status_code": null,
           "retry_on_status_codes": [
@@ -1012,7 +1012,7 @@
           "url": "{{Connection.protocol}}{{Connection.url}}/web/api/v2.0/threats",
           "url_path": "/web/api/v2.0/threats",
           "url_prefix": null,
-          "payload": "{\n  \"data\": {\n    \"text\": \"Analyst {{wait-for-slack.body.user.username}} DISMISSED as false positive. No Cloudflare block applied. Rationale: assessed benign (likely a legitimate search-engine crawler, uptime monitor, or approved partner bot). src_ip {{local_var.src_ip}}; VirusTotal malicious={{virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious}}. Playbook: OneFlare Golden Bot-Scraper Response.\"\n  },\n  \"filter\": {\n    \"ids\": [\n      \"{{singularity-response-trigger.data.id}}\"\n    ]\n  }\n}",
+          "payload": "{\n  \"data\": {\n    \"text\": \"Analyst {{wait-for-slack.body.user.username}} DISMISSED as false positive. No Cloudflare block applied. Rationale: assessed benign (likely a legitimate search-engine crawler, uptime monitor, or approved partner bot). src_ip {{local_var.src_ip}}; VirusTotal malicious={{virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious}}. Playbook: OneFlare Bot-Scraper Response.\"\n  },\n  \"filter\": {\n    \"ids\": [\n      \"{{singularity-response-trigger.data.id}}\"\n    ]\n  }\n}",
           "parameters": [],
           "retry_on_status_code": null,
           "retry_on_status_codes": [
