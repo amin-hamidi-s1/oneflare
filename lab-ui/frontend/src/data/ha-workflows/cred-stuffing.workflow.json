@@ -128,8 +128,8 @@
           "action_type": "http_request",
           "public_action_id": "26adfd4c-0f20-4e2d-8e63-2905b0a20092",
           "method": "post",
-          "url": "{{Connection.protocol}}{{Connection.url}}/web/api/v2.1/dv/init-query",
-          "url_path": "/web/api/v2.1/dv/init-query",
+          "url": "{{Connection.protocol}}{{Connection.url}}<@/web/api/v2.1/dv/events/pq@>",
+          "url_path": "/web/api/v2.1/dv/events/pq",
           "url_prefix": null,
           "payload": "{\n  \"query\": \"{{local_var.pq_query}}\",\n  \"fromDate\": \"{{Function.DELTA_NOW(24)}}\",\n  \"toDate\": \"{{Function.DATETIME_NOW()}}\"\n}",
           "parameters": [],
@@ -188,14 +188,14 @@
           "action_type": "http_request",
           "public_action_id": "6b7c9ea5-cf53-4a27-986a-5bc0b627e0f8",
           "method": "get",
-          "url": "{{Connection.protocol}}{{Connection.url}}/web/api/v2.1/dv/query-status",
-          "url_path": "/web/api/v2.1/dv/query-status",
+          "url": "{{Connection.protocol}}{{Connection.url}}<@/web/api/v2.1/dv/events/pq-ping@>",
+          "url_path": "/web/api/v2.1/dv/events/pq-ping",
           "url_prefix": null,
           "payload": null,
           "parameters": [
             {
-              "key": "queryId",
-              "value": "{{create-power-query.body.data.queryId}}"
+              "parameter_name": "queryId",
+              "parameter_value": "{{create-power-query.body.data.queryId}}"
             }
           ],
           "retry_on_status_code": null,
@@ -252,14 +252,14 @@
           "action_type": "http_request",
           "public_action_id": "014e1093-4466-4fa4-8cd7-317a8dac18c2",
           "method": "get",
-          "url": "{{Connection.protocol}}{{Connection.url}}/web/api/v2.1/dv/events",
-          "url_path": "/web/api/v2.1/dv/events",
+          "url": "{{Connection.protocol}}{{Connection.url}}<@/web/api/v2.1/dv/events/pq-ping@>",
+          "url_path": "/web/api/v2.1/dv/events/pq-ping",
           "url_prefix": null,
           "payload": null,
           "parameters": [
             {
-              "key": "queryId",
-              "value": "{{create-power-query.body.data.queryId}}"
+              "parameter_name": "queryId",
+              "parameter_value": "{{create-power-query.body.data.queryId}}"
             }
           ],
           "retry_on_status_code": null,
@@ -316,8 +316,8 @@
           "action_type": "http_request",
           "public_action_id": "25394f56-6862-4ba7-9843-5d6c5fa3ac04",
           "method": "get",
-          "url": "{{Connection.protocol}}{{Connection.url}}/api/v3/ip_addresses/{{local_var.src_ip}}",
-          "url_path": "/api/v3/ip_addresses/<<ip>>",
+          "url": "{{Connection.protocol}}{{Connection.url}}<@/api/v3/ip_addresses/{{local_var.src_ip}}@>",
+          "url_path": "/api/v3/ip_addresses/{{local_var.src_ip}}",
           "url_prefix": null,
           "payload": null,
           "parameters": [],
@@ -375,18 +375,22 @@
           "action_type": "http_request",
           "public_action_id": "6ea08101-8a9f-4559-8194-0af800acd620",
           "method": "get",
-          "url": "{{Connection.protocol}}{{Connection.url}}/api/v2/blacklist",
-          "url_path": "/api/v2/blacklist",
+          "url": "{{Connection.protocol}}{{Connection.url}}<@/api/v2/check@>",
+          "url_path": "/api/v2/check",
           "url_prefix": null,
           "payload": null,
           "parameters": [
             {
-              "key": "ipAddress",
-              "value": "{{local_var.src_ip}}"
+              "parameter_name": "ipAddress",
+              "parameter_value": "{{local_var.src_ip}}"
             },
             {
-              "key": "maxAgeInDays",
-              "value": "90"
+              "parameter_name": "maxAgeInDays",
+              "parameter_value": "90"
+            },
+            {
+              "parameter_name": "verbose",
+              "parameter_value": "yes"
             }
           ],
           "retry_on_status_code": null,
@@ -446,7 +450,7 @@
           "url": "{{Connection.protocol}}{{Connection.url}}<@/api/chat.postMessage@>",
           "url_path": "/api/chat.postMessage",
           "url_prefix": null,
-          "payload": "{\n  \"channel\": \"{{local_var.channel_id}}\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"emoji\": true, \"text\": \"Credential Stuffing — portal.soledrop.co (HIGH)\" }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": { \"type\": \"mrkdwn\", \"text\": \"*A single source is brute-forcing / credential-stuffing the SoleDrop employee portal.*\\n\\n*Source IP:* `{{local_var.src_ip}}`  (geo: {{virustotal-search-ip.body.data.attributes.country}})\\n*VirusTotal:* {{virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious}} engines malicious\\n*AbuseIPDB:* {{abuseipdb-check-ip.body.data.abuseConfidenceScore}}/100 abuse confidence\\n*Failed logins (401/403/429 on /login):* *{{get-dv-events.body.data[0].failed_logins}}*\\n*Distinct User-Agents:* {{get-dv-events.body.data[0].distinct_uas}}\\n*ATT&CK:* T1110.004 / T1110.001\" }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": { \"type\": \"mrkdwn\", \"text\": \"*Before you block:* confirm `{{local_var.src_ip}}` is not a shared corporate VPN/NAT egress — many legitimate users behind one IP can also generate 401s. If it is, Dismiss.\" }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": { \"type\": \"mrkdwn\", \"text\": \"*Alert:* <{{Function.GET_MANAGEMENT_URL()}}/incidents/unified-alerts?alertId={{singularity-response-trigger.data.id}}|{{singularity-response-trigger.data.name}}>\" }\n    },\n    {\n      \"type\": \"actions\",\n      \"elements\": [\n        {\n          \"type\": \"button\",\n          \"text\": { \"type\": \"plain_text\", \"emoji\": true, \"text\": \"Block at Cloudflare\" },\n          \"style\": \"primary\",\n          \"value\": \"approved\"\n        },\n        {\n          \"type\": \"button\",\n          \"text\": { \"type\": \"plain_text\", \"emoji\": true, \"text\": \"Dismiss — False Positive\" },\n          \"style\": \"danger\",\n          \"value\": \"dismissed\"\n        }\n      ]\n    }\n  ]\n}",
+          "payload": "{\n  \"channel\": \"{{local_var.channel_id}}\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"emoji\": true, \"text\": \"Credential Stuffing — portal.soledrop.co (HIGH)\" }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": { \"type\": \"mrkdwn\", \"text\": \"*A single source is brute-forcing / credential-stuffing the SoleDrop employee portal.*\\n\\n*Source IP:* `{{local_var.src_ip}}`  (geo: {{virustotal-search-ip.body.data.attributes.country}})\\n*VirusTotal:* {{virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious}} engines malicious\\n*AbuseIPDB:* {{abuseipdb-check-ip.body.data.abuseConfidenceScore}}/100 abuse confidence\\n*Failed logins (401/403/429 on /login):* *see SentinelOne run*\\n*Distinct User-Agents:* see SentinelOne run\\n*ATT&CK:* T1110.004 / T1110.001\" }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": { \"type\": \"mrkdwn\", \"text\": \"*Before you block:* confirm `{{local_var.src_ip}}` is not a shared corporate VPN/NAT egress — many legitimate users behind one IP can also generate 401s. If it is, Dismiss.\" }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": { \"type\": \"mrkdwn\", \"text\": \"*Alert:* <{{Function.GET_MANAGEMENT_URL()}}/incidents/unified-alerts?alertId={{singularity-response-trigger.data.id}}|{{singularity-response-trigger.data.name}}>\" }\n    },\n    {\n      \"type\": \"actions\",\n      \"elements\": [\n        {\n          \"type\": \"button\",\n          \"text\": { \"type\": \"plain_text\", \"emoji\": true, \"text\": \"Block at Cloudflare\" },\n          \"style\": \"primary\",\n          \"value\": \"approved\"\n        },\n        {\n          \"type\": \"button\",\n          \"text\": { \"type\": \"plain_text\", \"emoji\": true, \"text\": \"Dismiss — False Positive\" },\n          \"style\": \"danger\",\n          \"value\": \"dismissed\"\n        }\n      ]\n    }\n  ]\n}",
           "parameters": [],
           "retry_on_status_code": null,
           "retry_on_status_codes": [
@@ -605,7 +609,7 @@
           "action_type": "http_request",
           "public_action_id": "9db31c31-8713-4cff-924c-5d8dc392c8f2",
           "method": "post",
-          "url": "{{Connection.protocol}}{{Connection.url}}/client/v4/user/firewall/access_rules/rules",
+          "url": "{{Connection.protocol}}{{Connection.url}}<@/client/v4/user/firewall/access_rules/rules@>",
           "url_path": "/client/v4/user/firewall/access_rules/rules",
           "url_prefix": null,
           "payload": "{\n  \"mode\": \"block\",\n  \"configuration\": { \"target\": \"ip\", \"value\": \"{{local_var.src_ip}}\" },\n  \"notes\": \"OneFlare cred-stuffing auto-block — alert {{singularity-response-trigger.data.id}}\"\n}",
@@ -727,7 +731,7 @@
           "url": "{{Connection.protocol}}{{Connection.url}}/web/api/v2.0/threats",
           "url_path": "/web/api/v2.0/threats",
           "url_prefix": null,
-          "payload": "{\n  \"data\": { \"text\": \"Analyst {{wait-for-slack.body.user.username}} APPROVED Cloudflare block of {{local_var.src_ip}}. Evidence: {{get-dv-events.body.data[0].failed_logins}} failed /login (401/403/429) from {{get-dv-events.body.data[0].distinct_uas}} distinct UAs; VirusTotal malicious={{virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious}}, AbuseIPDB={{abuseipdb-check-ip.body.data.abuseConfidenceScore}}. Playbook: OneFlare Cred-Stuffing Response.\" },\n  \"filter\": { \"ids\": [ \"{{singularity-response-trigger.data.id}}\" ] }\n}",
+          "payload": "{\n  \"data\": { \"text\": \"Analyst {{wait-for-slack.body.user.username}} APPROVED Cloudflare block of {{local_var.src_ip}}. Evidence: see SentinelOne run failed /login (401/403/429) from see SentinelOne run distinct UAs; VirusTotal malicious={{virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious}}, AbuseIPDB={{abuseipdb-check-ip.body.data.abuseConfidenceScore}}. Playbook: OneFlare Cred-Stuffing Response.\" },\n  \"filter\": { \"ids\": [ \"{{singularity-response-trigger.data.id}}\" ] }\n}",
           "parameters": [],
           "retry_on_status_code": null,
           "retry_on_status_codes": [
