@@ -475,6 +475,7 @@ export default function ScenarioDetail() {
   const [needsLogin, setNeedsLogin] = useState(false)
   const wsRef = useRef(null)
   const cancelRef = useRef(false)
+  const terminalRef = useRef(null)
 
   // Session (role) — decides whether a run targets the caller's own
   // subdomain (non-admin, forced server-side) or an admin-selected target
@@ -619,6 +620,12 @@ export default function ScenarioDetail() {
     setNeedsLogin(false)
     setStartTime(start)
     setIsRunning(true)
+
+    // Scroll the terminal into view ONCE when the run starts — after this the log
+    // does not auto-scroll on each new line (Terminal keeps per-line scroll off).
+    requestAnimationFrame(() => {
+      terminalRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
 
     const isAdmin = session?.role === 'admin'
     const storedTarget = isAdmin ? getRunTarget() : ''
@@ -856,9 +863,8 @@ export default function ScenarioDetail() {
             {/* Scenario context — what this attack is and why it matters */}
             <ScenarioOverviewBlock scenario={scenario} />
 
-            {/* Run controls — target selection + run/stop + clear on one line, ABOVE the disclaimer */}
+            {/* Run controls — run/stop on the LEFT, then target selection + clear on one line, ABOVE the disclaimer */}
             <div className="flex items-center gap-3 flex-wrap">
-              <div className="flex-1 min-w-[240px]"><TargetBar scope="scenario" /></div>
               <button
                 onClick={handleRun}
                 disabled={!isConfigured && !isRunning}
@@ -876,6 +882,7 @@ export default function ScenarioDetail() {
                   <><Play className="w-4 h-4" /> Run Attack</>
                 )}
               </button>
+              <div className="flex-1 min-w-[240px]"><TargetBar scope="scenario" /></div>
               {(isRunning || runDone) && (
                 <button
                   onClick={() => { setLines([]); setRunDone(false); setExitCode(null) }}
@@ -976,11 +983,13 @@ export default function ScenarioDetail() {
             )}
 
             {/* Terminal */}
-            <Terminal
-              lines={lines}
-              isRunning={isRunning}
-              title={`${scenario.id} — attack output`}
-            />
+            <div ref={terminalRef} className="scroll-mt-20">
+              <Terminal
+                lines={lines}
+                isRunning={isRunning}
+                title={`${scenario.id} — attack output`}
+              />
+            </div>
 
             {/* Summary */}
             {runDone && exitCode !== null && (
