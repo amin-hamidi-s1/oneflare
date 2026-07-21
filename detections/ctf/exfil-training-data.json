@@ -37,7 +37,7 @@
           "expirationMode": "Permanent",
           "treatAsThreat": "UNDEFINED",
           "networkQuarantine": false,
-          "entityMappings": [{"columnName": "src_ip"}, {"columnName": "ja4"}],
+          "entityMappings": [{"columnName": "src_ip"}, {"columnName": "ja3"}],
           "scheduledParams": {
             "query": "dataSource.name='Cloudflare' dataSource.cloudflare_dataset='HTTP Requests' http_request.url.hostname contains '.lab.soledrop.co' http_request.url.path=* | filter (http_request.url.path in ('/api/v1/training-data','/api/v1/models','/api/v1/customers/export','/api/v1/users','/api/v1/billing','/api/v1/tenants') OR http_request.url.url_string matches '(?i)(include_weights=true|export=true|format=jsonl|limit=1000|/customers/export|/training-data)') | group pulls=count(), total_bytes=sum(number(http_response.body_length)), max_bytes=max(number(http_response.body_length)), endpoints=estimate_distinct(http_request.url.path), first_seen=oldest(timestamp), last_seen=newest(timestamp), ja3=any(tls.ja3_hash.value), ua=any(http_request.user_agent) by src_ip=src_endpoint.ip | filter pulls >= 10 OR total_bytes >= 5000000 | columns src_ip, pulls, total_bytes, max_bytes, endpoints, ja3, ua, first_seen, last_seen | sort -total_bytes | limit 100",
             "runIntervalMinutes": 15,
@@ -48,7 +48,7 @@
         "filter": {"accountIds": ["<accountId>"]}
       },
       "api_body_note": "The api_body query drops the count(http_response.status='200') 'ok' column to stay on confirmed-safe aggregate syntax; add it back once predicate-count is validated. number() wraps both sum() and max() of body_length to survive SDL type-locking. Backslashes JSON-double-escaped in the url_string regex.",
-      "asset_binding": "Scheduled rule: entityMappings on src_ip + ja4. Device = 'Unknown Device' until asset enrichment; src_ip drives the HA containment playbook (block IP, revoke API keys, tighten /export rate limit).",
+      "asset_binding": "Scheduled rule: entityMappings on src_ip + ja3. Device = 'Unknown Device' until asset enrichment; src_ip drives the HA containment playbook (block IP, revoke API keys, tighten /export rate limit).",
       "deploy": "POST -> enable {\"filter\":{\"ids\":[\"<id>\"]}} -> poll ?ids=<id>&isLegacy=false until Active -> wait one 15-min interval. Scheduled-rule constraints (treatAsThreat=UNDEFINED, networkQuarantine=false)."
     }
   ]

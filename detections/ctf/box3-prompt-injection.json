@@ -77,7 +77,7 @@
       },
       "hunt_query": {
         "powerquery": "dataSource.name='Cloudflare' class_uid=4002 http_request.url.hostname contains '.lab.soledrop.co' http_request.url.path contains:anycase('/api/v1/chat') | filter (number(unmapped.FirewallForAIInjectionScore) >= 50 OR http_request.url.url_string matches '(?i)(ignore (all )?previous instructions|do anything now|\\bDAN\\b|jailbreak|\\$\\{jndi:|system prompt|SECRET_KEY)' OR http_request.user_agent matches '(?i)\\$\\{(jndi|::-|lower:)') | group injection_attempts=count(), max_ai_score=max(number(unmapped.FirewallForAIInjectionScore)), first_seen=oldest(timestamp), last_seen=newest(timestamp), ja3=any(tls.ja3_hash.value), ua=any(http_request.user_agent) by src_ip=src_endpoint.ip | filter injection_attempts >= 3 | columns src_ip, injection_attempts, max_ai_score, ja3, ua, first_seen, last_seen | sort -injection_attempts | limit 100",
-        "note": "injection_attempts >= 3 in a 15-min window. Carries ja4 so the SOC can confirm the same fingerprint pivoted from Box 1/2 recon to the AI layer.",
+        "note": "injection_attempts >= 3 in a 15-min window. Carries ja3 so the SOC can confirm the same fingerprint pivoted from Box 1/2 recon to the AI layer.",
         "row_counts": "TO-RUN on live tenant."
       },
       "api_body": {
@@ -96,7 +96,7 @@
               "columnName": "src_ip"
             },
             {
-              "columnName": "ja4"
+              "columnName": "ja3"
             }
           ],
           "scheduledParams": {
@@ -116,7 +116,7 @@
         }
       },
       "api_body_note": "If unmapped.FirewallForAIInjectionScore is not queryable post-parse, number() yields 0 and the rule relies on the payload-text clauses still valid. ESCAPING: scheduledParams.query holds single backslashes after JSON-parsing this file; the HTTP-client serializer re-doubles them on the wire. Do NOT hand-add extra backslashes.",
-      "asset_binding": "Scheduled rule: entityMappings on src_ip + ja4. Until asset enrichment, device = 'Unknown Device'; src_ip/ja4 drive the HA response (revoke API keys for the source, raise Firewall-for-AI sensitivity).",
+      "asset_binding": "Scheduled rule: entityMappings on src_ip + ja3. Until asset enrichment, device = 'Unknown Device'; src_ip/ja3 drive the HA response (revoke API keys for the source, raise Firewall-for-AI sensitivity).",
       "deploy": "POST -> enable -> poll until Active -> wait one 15-min interval. List with isLegacy=false."
     }
   ]

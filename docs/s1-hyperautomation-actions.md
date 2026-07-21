@@ -1,5 +1,11 @@
 # SentinelOne Hyperautomation — Cloudflare Actions Reference
 
+> **For the real `public_action_id` + `integration_id` to wire these natively, see
+> [`s1-ha-integration-catalog.md`](./s1-ha-integration-catalog.md)** — live-fetched from the
+> console (2026-07-20). This file is the human-readable "which action for which use case" map;
+> the catalog is the machine-wiring source of truth. Always wire native actions, never a raw
+> `http_request`, for Cloudflare / SentinelOne / Slack / AbuseIPDB / VirusTotal.
+
 Documented from available actions in the SentinelOne Hyperautomation platform.
 
 ## IP Access Rules

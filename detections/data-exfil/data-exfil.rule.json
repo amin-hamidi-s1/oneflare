@@ -20,7 +20,7 @@
       },
       "alertPerRow": true
     },
-    "_entityMappings_pending_feature": [
+    "entityMappings": [
       {
         "columnName": "src_ip"
       },

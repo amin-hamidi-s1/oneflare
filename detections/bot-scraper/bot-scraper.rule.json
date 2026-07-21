@@ -1,7 +1,7 @@
 {
   "data": {
-    "name": "CF-Bot-Scraper — Low-BotScore Automated Scraping against NovaMind",
-    "description": "Detects automated / scraper traffic against NovaMind web properties (class_uid 4002, 'HTTP Requests') using Cloudflare's ML BotScore. Cloudflare emits BotScore as a 1–99 string where LOWER = more bot-like; a score <= 29 marks traffic Cloudflare's model considers likely automated. Casts unmapped.BotScore with number(), scopes to the lab surface (hostname contains 'soledrop.co', which covers shop.soledrop.co and any per-user *.lab.soledrop.co subdomain), groups by src_ip and fires when a single source produces >= 20 likely-bot requests in the window. Surfaces min/avg BotScore, distinct_paths (breadth of crawl) and a sample User-Agent as context. Low false-positive because a human browser does not emit 20+ requests scored <= 29 from one IP; validated hits carried unambiguous automation UAs (Wrath-AIO, libwww-perl, PhantomJS, Go-http-client). NOTE: the JA4 TLS-fingerprint variant of this detection is dead — unmapped.JA4 / ClientRequestJA4 / JA4Signals / BotTags return 0 records in this tenant — so BotScore is the working signal. MITRE ATT&CK T1595 (Active Scanning), T1071 (Application Layer Protocol); MITRE ATLAS AML.T0002 (data reconnaissance via scraping). Covers OneFlare scenario 'bot'.",
+    "name": "CF-Bot-Scraper — Low-BotScore Automated Scraping against shop.soledrop.co",
+    "description": "Detects automated / scraper traffic against SoleDrop web properties (class_uid 4002, 'HTTP Requests') using Cloudflare's ML BotScore. Cloudflare emits BotScore as a 1–99 string where LOWER = more bot-like; a score <= 29 marks traffic Cloudflare's model considers likely automated. Casts unmapped.BotScore with number(), scopes to the lab surface (hostname contains 'soledrop.co', which covers shop.soledrop.co and any per-user *.lab.soledrop.co subdomain), groups by src_ip and fires when a single source produces >= 20 likely-bot requests in the window. Surfaces min/avg BotScore, distinct_paths (breadth of crawl) and a sample User-Agent as context. Low false-positive because a human browser does not emit 20+ requests scored <= 29 from one IP; validated hits carried unambiguous automation UAs (Wrath-AIO, libwww-perl, PhantomJS, Go-http-client). NOTE: the JA4 TLS-fingerprint variant of this detection is dead — unmapped.JA4 / ClientRequestJA4 / JA4Signals / BotTags return 0 records in this tenant — so BotScore is the working signal. MITRE ATT&CK T1595 (Active Scanning), T1071 (Application Layer Protocol); MITRE ATLAS AML.T0002 (data reconnaissance via scraping). Covers OneFlare scenario 'bot'.",
     "queryType": "scheduled",
     "queryLang": "2.0",
     "severity": "Medium",
@@ -20,7 +20,7 @@
       },
       "alertPerRow": true
     },
-    "_entityMappings_pending_feature": [
+    "entityMappings": [
       {
         "columnName": "src_ip"
       },

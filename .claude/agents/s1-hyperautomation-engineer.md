@@ -26,6 +26,13 @@ detections to take Cloudflare and SentinelOne actions.
      `references/{workflow-schema,building-blocks-catalog,api-integration,validation-rules,functions-reference}.md`.
 3. Read `docs/s1-hyperautomation-actions.md` and `docs/story-map.md` for the intended
    response per scenario.
+4. **Read `docs/s1-ha-integration-catalog.md` — the live-fetched source of truth for
+   `integration_id` + `public_action_id` per vendor.** When an action targets Cloudflare,
+   SentinelOne, Slack, AbuseIPDB, or VirusTotal, you MUST wire it as a native integration
+   action (`tag:"integration"` + the catalog's `public_action_id`), NOT a hand-rolled generic
+   `http_request`. Only use a raw `http_request` (`public_action_id:null`) when the catalog has
+   no matching action. Re-fetch from `GET .../hyper-automate/api/v1/public-actions` to extend
+   the catalog when a new vendor comes in scope.
 
 ## Building blocks
 - **Triggers**: manual, scheduled, HTTP/webhook, email, **Singularity Response (alert)**.

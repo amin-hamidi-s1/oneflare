@@ -102,13 +102,16 @@ export const CAMPAIGN_DETECTIONS = CAMPAIGN_DETECTION_DEFS.map(({ key, campaignI
 // Hyperautomation response workflows. workflowKey matches the loaders in
 // haPlaybooks.js (src/data/ha-workflows/<key>.workflow.json) so the raw JSON is
 // lazy-loaded on demand. web-attacks covers three scenarios.
+const NATIVE_CONNECTIONS = ['SentinelOne', 'Slack', 'Cloudflare', 'VirusTotal', 'AbuseIPDB']
+
 export const HA_WORKFLOWS = [
-  { type: 'ha', key: 'web-attacks',      scenarioIds: ['sqli', 'xss', 'traversal'], name: 'CF-WAF Web-Attack Response', detail: 'SQLi / XSS / Path-Traversal — parametrized', connections: ['Cloudflare', 'VirusTotal', 'SentinelOne', 'Slack', 'Email'] },
-  { type: 'ha', key: 'cred-stuffing',    scenarioIds: ['cred'],       name: 'CF-Access Credential-Attack Response', detail: 'Brute force / credential stuffing', connections: ['Cloudflare', 'AbuseIPDB', 'SentinelOne', 'Slack', 'Email'] },
-  { type: 'ha', key: 'data-exfil',       scenarioIds: ['exfil'],      name: 'CF-API Data-Exfiltration Response', detail: 'Bulk pull / endpoint enumeration', connections: ['Cloudflare', 'VirusTotal', 'AbuseIPDB', 'SentinelOne', 'Slack', 'Email'] },
-  { type: 'ha', key: 'bot-scraper',      scenarioIds: ['bot'],        name: 'CF-Bot Scraper Mitigation', detail: 'Low-BotScore automated scraping', connections: ['Cloudflare', 'VirusTotal', 'SentinelOne', 'Slack', 'Email'] },
-  { type: 'ha', key: 'prompt-injection', scenarioIds: ['promptinj'],  name: 'CF-AI Prompt-Injection Response', detail: 'LLM jailbreak / injection probing', connections: ['Cloudflare', 'VirusTotal', 'SentinelOne', 'Slack', 'Email'] },
-  { type: 'ha', key: 'dns-tunneling',    scenarioIds: ['dns'],        name: 'CF-Gateway DNS-Tunnel Response', detail: 'DNS tunneling / C2 beaconing', connections: ['Cloudflare', 'VirusTotal', 'SentinelOne', 'Slack', 'Email'] },
+  { type: 'ha', key: 'web-attacks',      scenarioIds: ['sqli', 'xss', 'traversal'], name: 'CF-WAF Web-Attack Response', detail: 'SQLi / XSS / Path-Traversal — parametrized', connections: NATIVE_CONNECTIONS },
+  { type: 'ha', key: 'cred-stuffing',    scenarioIds: ['cred'],       name: 'CF-Access Credential-Attack Response', detail: 'Brute force / credential stuffing', connections: NATIVE_CONNECTIONS },
+  { type: 'ha', key: 'data-exfil',       scenarioIds: ['exfil'],      name: 'CF-API Data-Exfiltration Response', detail: 'Bulk pull / endpoint enumeration', connections: NATIVE_CONNECTIONS },
+  { type: 'ha', key: 'bot-scraper',      scenarioIds: ['bot'],        name: 'CF-Bot Scraper Mitigation', detail: 'Low-BotScore automated scraping', connections: NATIVE_CONNECTIONS },
+  { type: 'ha', key: 'prompt-injection', scenarioIds: ['promptinj'],  name: 'CF-AI Prompt-Injection Response', detail: 'LLM jailbreak / injection probing', connections: NATIVE_CONNECTIONS },
+  { type: 'ha', key: 'dns-tunneling',    scenarioIds: ['dns'],        name: 'CF-Gateway DNS-Tunnel Response', detail: 'DNS tunneling / C2 beaconing', connections: NATIVE_CONNECTIONS },
+  { type: 'ha', key: 'ctf-campaign',     scenarioIds: ['ctf'],        name: 'SoleDrop CTF Campaign Response', detail: 'Operation Drop-Day Bot Swarm — recon → bot swarm → AI abuse → breakout', connections: NATIVE_CONNECTIONS },
 ]
 
 // SDL dashboards (config-as-JSON put to /dashboards/<name>).

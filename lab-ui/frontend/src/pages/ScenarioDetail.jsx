@@ -144,6 +144,47 @@ function WorkflowJsonPanel({ workflowKey, filename }) {
   )
 }
 
+// "Setup — before you import" — richer prerequisite panel for playbooks that define
+// haPlaybook.setup (connections to bind + free third-party API keys to sign up for
+// before importing). Falls back to the plain connections pill list (below) when a
+// playbook hasn't been upgraded to the golden template's `setup` shape yet.
+function SetupPanel({ setup }) {
+  return (
+    <div className="rounded-xl bg-[#1a0a2e] border border-[#2d1b4e] p-5">
+      <SectionHeader icon={Plug} title="Setup — before you import" accent="blue" />
+      <p className="text-sm text-slate-300 leading-relaxed mb-4">{setup.intro}</p>
+      <ul className="space-y-2.5">
+        {setup.items.map((item, i) => (
+          <li key={i} className="flex items-start gap-2.5">
+            <CheckCircle2 className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+            <div className="text-sm leading-relaxed">
+              <span className="font-semibold text-slate-100">{item.label}</span>
+              {item.detail && <span className="text-slate-400"> — {item.detail}</span>}
+              {item.url && (
+                <a
+                  href={item.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Sign up for a free ${item.label} API key (opens in a new tab)`}
+                  className="ml-1.5 inline-flex items-center gap-1 text-purple-400 hover:text-purple-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 rounded"
+                >
+                  Get key <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+      {setup.note && (
+        <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-3 flex gap-2.5 mt-4">
+          <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+          <p className="text-xs text-slate-400 leading-relaxed">{setup.note}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // Rich, detection-engineer-focused SIEM view (used when a scenario defines `siem`).
 // Rule identity (name / severity / query) is sourced from the canonical
 // knowledgeObjects.DETECTIONS entry — the ACTUAL deployed rule JSON — so what a
@@ -748,24 +789,29 @@ export default function ScenarioDetail() {
                   <p className="text-sm text-slate-300 leading-relaxed">{haPlaybook.why}</p>
                 </div>
 
-                {/* Connections required */}
-                <div className="rounded-xl bg-[#1a0a2e] border border-[#2d1b4e] p-5">
-                  <SectionHeader icon={Plug} title="Connections required" accent="blue" />
-                  <div className="flex flex-wrap gap-2">
-                    {haPlaybook.connections.map((c, i) => (
-                      <span
-                        key={i}
-                        className="inline-flex items-center rounded-full border border-[#2d1b4e] bg-white/5 px-3 py-1 text-xs font-mono text-slate-300"
-                      >
-                        {c}
-                      </span>
-                    ))}
+                {/* Setup — before you import (golden-template playbooks) — falls back to the
+                    plain connections pill list for playbooks that haven't defined `setup` yet. */}
+                {haPlaybook.setup ? (
+                  <SetupPanel setup={haPlaybook.setup} />
+                ) : (
+                  <div className="rounded-xl bg-[#1a0a2e] border border-[#2d1b4e] p-5">
+                    <SectionHeader icon={Plug} title="Connections required" accent="blue" />
+                    <div className="flex flex-wrap gap-2">
+                      {haPlaybook.connections.map((c, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center rounded-full border border-[#2d1b4e] bg-white/5 px-3 py-1 text-xs font-mono text-slate-300"
+                        >
+                          {c}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-xs text-slate-500 mt-3 leading-relaxed">
+                      Configure these under Hyperautomation &rarr; Integrations before importing —
+                      integration-backed actions won't run without a bound connection.
+                    </p>
                   </div>
-                  <p className="text-xs text-slate-500 mt-3 leading-relaxed">
-                    Configure these under Hyperautomation &rarr; Integrations before importing —
-                    integration-backed actions won't run without a bound connection.
-                  </p>
-                </div>
+                )}
 
                 {/* Workflow JSON (collapsible, lazy-loaded) */}
                 <WorkflowJsonPanel workflowKey={haPlaybook.workflowKey} filename={haPlaybook.workflowFile} />

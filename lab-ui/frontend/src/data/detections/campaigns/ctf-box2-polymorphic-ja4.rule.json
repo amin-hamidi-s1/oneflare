@@ -11,14 +11,14 @@
     "networkQuarantine": false,
     "entityMappings": [
       {
-        "columnName": "ja4"
+        "columnName": "ja3"
       },
       {
         "columnName": "src_ip"
       }
     ],
     "scheduledParams": {
-      "query": "dataSource.name='Cloudflare' dataSource.cloudflare_dataset='HTTP Requests' http_request.url.hostname contains '.lab.soledrop.co' tls.ja3_hash.value=* http_request.user_agent=* | group distinct_uas=estimate_distinct(http_request.user_agent), hits=count(), distinct_paths=estimate_distinct(http_request.url.path), src_ips=estimate_distinct(src_endpoint.ip), first_seen=oldest(timestamp), last_seen=newest(timestamp), src_ip=any(src_endpoint.ip) by ja3=tls.ja3_hash.value | filter distinct_uas >= 6 | columns ja4, distinct_uas, distinct_paths, hits, src_ips, src_ip, first_seen, last_seen | sort -distinct_uas | limit 100",
+      "query": "dataSource.name='Cloudflare' dataSource.cloudflare_dataset='HTTP Requests' http_request.url.hostname contains '.lab.soledrop.co' tls.ja3_hash.value=* http_request.user_agent=* | group distinct_uas=estimate_distinct(http_request.user_agent), hits=count(), distinct_paths=estimate_distinct(http_request.url.path), src_ips=estimate_distinct(src_endpoint.ip), first_seen=oldest(timestamp), last_seen=newest(timestamp), src_ip=any(src_endpoint.ip) by ja3=tls.ja3_hash.value | filter distinct_uas >= 6 | columns ja3, distinct_uas, distinct_paths, hits, src_ips, src_ip, first_seen, last_seen | sort -distinct_uas | limit 100",
       "runIntervalMinutes": 15,
       "lookbackWindowMinutes": 15,
       "threshold": {

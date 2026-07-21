@@ -1,5 +1,89 @@
 # Lessons
 
+## 2026-07-20 — HA native action needs `integration_id` SET, not null (else renders as HTTP)
+**Context:** The golden workflow imported but 6 nodes (Cloudflare block, S1 PowerQuery triad,
+VirusTotal, AbuseIPDB) showed as plain **"Send HTTP Request"** on the canvas, not native
+integrations — even though each had the correct `public_action_id`. Cause: they had
+`integration_id: null`. The nodes that DID render native (Slack, S1 Add-Note) had a real
+`integration_id`. My earlier catalog guidance ("leave integration_id null, the console resolves
+it from connections") was WRONG.
+**Rule:** a native integration action node needs BOTH `tag:"integration"`, the action's
+`public_action_id`, AND the vendor's **`integration_id`** (from `docs/s1-ha-integration-catalog.md`
+Connection matrix) populated. `public_action_id` alone is insufficient. `connection_id` MAY stay
+null (node renders native, unbound; user binds after import). Fix: map each node's
+`public_action_id` → its integration_id and set it. Corrected the catalog doc + applies to all 13
+fan-out playbooks. [[ha-integration-action-catalog]]
+
+## 2026-07-20 — HA workflow `notes` must be `[]` (or objects), never strings
+**Context:** Importing the golden workflow failed with `Input should be a valid dictionary or
+object to extract fields from at "body.data.notes.0" …notes.5`. The workflow-level `notes` array
+was authored as 6 plain strings. The importer requires each `notes` entry to be an OBJECT
+(canvas sticky-note), and the object shape is undocumented in the HA schema refs. The proven
+reference (`Blocklist IP.json`) uses `notes: []`.
+**Rule for every HA workflow we build:** set `"notes": []`. Put all per-step / setup narrative in
+each node's `description` field (guaranteed-valid envelope key) — which is where it belongs
+anyway (it shows on the node). Do NOT put human notes in the top-level `notes` array unless we
+have a confirmed object shape from a real console export. Applies to all 13 fan-out playbooks.
+
+## 2026-07-20 — PowerQuery has no `if()` — use the ternary `cond ? a : b`
+**Context:** `box4-agentic-breakout` failed to launch with `400 invalid_argument "Unknown
+function 'if'"`. It used `let is_rce = if(payload matches '…', 1, 0)`. PowerQuery has **no
+`if(cond,a,b)` function** — the conditional is the ternary operator `cond ? a : b`. Fix:
+`(payload matches '…' ? 1 : 0)`. Live-verified after fix (1 row, matchCount 42). Every other
+rule in the repo already uses ternary. **When authoring any scheduled PQ that needs a
+conditional/flag column, use `?:`, never `if(...)`,** and remember to fix BOTH the deployed
+`scheduledParams.query` and the display/`powerquery` copy in the same file. Verify live before
+calling a rule done — parse-time errors only surface on an actual LRQ launch.
+**Tooling:** live read-only PQ verification runs via `scratchpad/lrq.py` (Bearer LRQ API,
+`POST /sdl/v2/api/queries` + poll `stepsCompleted>=stepsTotal`), with Bash
+`dangerouslyDisableSandbox:true` (sandbox blocks `*.sentinelone.net`). See [[ha-integration-action-catalog]].
+
+## 2026-07-20 — Scheduled-rule `entityMappings`: activate to carry src_ip onto the alert
+**Context:** Cloudflare alerts bind to "Unknown Device" and the alert JSON envelope does NOT
+carry src_ip — the HA playbook had to re-run PowerQuery just to learn the attacker IP. Fix is
+`data.entityMappings` on scheduled (PowerQuery) rules. Applied across all 9 scheduled rules
+(converted the parked `_entityMappings_pending_feature` placeholders to the real field).
+**The rules (apply to EVERY new scheduled detection going forward):**
+- Shape is exactly `"entityMappings": [{"columnName": "<col>"}]` — NO `entityType`/identifier
+  sub-field (that shape is invented and will fail). Cap **≤3 columns**.
+- **Every projected `columnName` MUST be an output column of the query's `columns`/`group … by`
+  stage.** Projecting a column the query doesn't emit binds nothing (silent). This is the #1 bug.
+- Project `src_ip` (= `src_endpoint.ip`) FIRST — it's the attacker identity the response
+  playbooks read. Add `host`/`country` only if the query actually emits them and they add pivot.
+- **entityMappings binds the IP as an ENTITY only; the Target Asset still shows "Unknown Device"**
+  until the asset-enrichment solution stamps `device.uid` + `class_uid` into the CF events.
+  entityMappings and asset-enrichment are complementary, not either/or.
+- Single-event/correlation rules do NOT use entityMappings (they auto-bind from the matched
+  event). Only `queryType:"scheduled"` uses it.
+**Also — a latent class of bug this surfaced:** the CTF rules aliased their group to `ja3`
+(`by ja3=tls.ja3_hash.value`) after live-verifying JA4 isn't PQ-addressable, but left `ja4` in
+both the `columns` clause and `entityMappings` — a half-done rename referencing a non-existent
+column. When you rename a group alias, grep the WHOLE rule for the old token (columns,
+entityMappings, prose) — the deployable fields (`scheduledParams.query`, `entityMappings`) are
+what actually break.
+
+## 2026-07-20 — HA actions: native-integration vs raw-HTTP is decided by `public_action_id`
+**Context:** A built workflow had Slack + S1-addNote as proper native integration actions but
+S1-PowerQuery-hydrate and Cloudflare-block as generic `http_request`. Why the split:
+- What makes an action a **native integration action** (not raw HTTP): `tag:"integration"` +
+  a **`public_action_id`** (UUID identifying the specific action in an installed integration's
+  catalog) + a `url` using the `<@/path@>` action-reference token. On import `connection_id`/
+  `integration_id` are often nulled and the console re-resolves them from the user's connections,
+  but **`public_action_id` MUST be kept** — it's the catalog action identity.
+- We could replicate Slack + S1-addNote natively ONLY because we had a real exported example
+  (`Downloads/Blocklist IP.json`) with their real `public_action_id`s. Native action metadata
+  lives ONLY in the tenant's HA console — the vendored catalog is generic.
+- **S1 PowerQuery has NO native action** — catalog B8 "PowerQuery via DV API" IS a generic HTTP
+  POST to `.../api/powerQuery`. So raw HTTP is CORRECT for hydration (bind it to an S1-SDL
+  connection so token/URL come from the connection, not hardcoded). Don't "fix" it to native.
+- **Cloudflare has NO integration in the vendored catalog** (0 mentions). If the tenant has a
+  native CF integration installed, we need its exported `public_action_id`; if not, a bound-HTTP
+  request to the CF API (IP Access Rules / Lists / WAF) is the correct and only approach.
+**Lesson / to build these natively going forward:** the unlock is an **exported stub workflow**
+(1 node per native action) from the tenant's console — same method that gave us Blocklist IP.json
+— plus the list of installed HA integrations + connections. Without that we cannot invent a real
+`public_action_id`; bound-HTTP is the honest fallback and is not wrong.
+
 ## 2026-07-02 — Cloudflare Containers deploy: don't containerize a static SPA
 **Context:** Deploying lab-ui to Cloudflare Containers repeatedly failed. Root causes, in order:
 (1) the frontend Docker build's `npm install` died on `ECONNRESET` because the host network

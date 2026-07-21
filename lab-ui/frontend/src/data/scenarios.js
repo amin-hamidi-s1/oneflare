@@ -38,11 +38,10 @@ THRESHOLD: 5 events in 60 seconds from same ClientIP`,
     siemSeverity: "High",
     siemTactic: "Initial Access / Exploitation",
     responseWorkflow: [
-      { step: 1, action: "Get IP Overview", detail: "Enrich ClientIP — ASN, country, threat reputation score" },
-      { step: 2, action: "Create IP Access Rule", detail: "Mode: block, IP: {{ClientIP}}, Notes: 'Auto-blocked: SQLi burst'" },
-      { step: 3, action: "Create PCAP Request", detail: "Capture 60s of traffic from {{ClientIP}} for forensics" },
-      { step: 4, action: "Update Log Retention", detail: "Extend retention on zone to preserve WAF evidence" },
-      { step: 5, action: "Notify SOC", detail: "Post alert with RayID, ClientIP, matched payload to SIEM/ticket" }
+      { step: 1, action: "Enrich & investigate — SentinelOne", detail: "Read the attacker src_ip straight off the alert (entity-mapped), then run a native SentinelOne PowerQuery to pull the WAF attack-request count, worst ML attack score, and a sample URI + method for that IP." },
+      { step: 2, action: "Third-party threat intel", detail: "VirusTotal Search-IP + AbuseIPDB Check-IP on the src_ip for reputation and a malicious/clean verdict. (Free API keys — see Setup.)" },
+      { step: 3, action: "Decision — ask Slack (action required)", detail: "Post an interactive Slack message with the evidence summary + false-positive caveat (authorized vulnerability scan / pentest or sanctioned scanner?) and [Block at Cloudflare] / [Dismiss] buttons, then wait for the analyst's choice." },
+      { step: 4, action: "Act & write back to the alert", detail: "Approve → Cloudflare Create-IP-Access-Rule blocks the src_ip at the edge → update Slack → Add Note to the alert → set analyst verdict True-Positive (only if VirusTotal flagged it malicious) else status In-Progress. Dismiss → note + False-Positive verdict." }
     ],
     siem: {
       ruleName: "CF-WAF-SQLi-AttackScore",
@@ -144,10 +143,10 @@ THRESHOLD: 5 events in 60 seconds from same ClientIP`,
     siemSeverity: "High",
     siemTactic: "Initial Access / Client-Side Injection",
     responseWorkflow: [
-      { step: 1, action: "Get IP Overview", detail: "Enrich attacker IP with threat intel" },
-      { step: 2, action: "Create IP Access Rule", detail: "Block ClientIP at zone level" },
-      { step: 3, action: "Update WAF Rule", detail: "Tighten XSS sensitivity for /search and /reviews routes" },
-      { step: 4, action: "Create PCAP Request", detail: "Capture 60s for payload forensics" }
+      { step: 1, action: "Enrich & investigate — SentinelOne", detail: "Read the attacker src_ip straight off the alert (entity-mapped), then run a native SentinelOne PowerQuery to pull the WAF attack-request count, worst ML attack score, and a sample URI + method for that IP." },
+      { step: 2, action: "Third-party threat intel", detail: "VirusTotal Search-IP + AbuseIPDB Check-IP on the src_ip for reputation and a malicious/clean verdict. (Free API keys — see Setup.)" },
+      { step: 3, action: "Decision — ask Slack (action required)", detail: "Post an interactive Slack message with the evidence summary + false-positive caveat (authorized vulnerability scan / pentest or sanctioned scanner?) and [Block at Cloudflare] / [Dismiss] buttons, then wait for the analyst's choice." },
+      { step: 4, action: "Act & write back to the alert", detail: "Approve → Cloudflare Create-IP-Access-Rule blocks the src_ip at the edge → update Slack → Add Note to the alert → set analyst verdict True-Positive (only if VirusTotal flagged it malicious) else status In-Progress. Dismiss → note + False-Positive verdict." }
     ],
     siem: {
       ruleName: "CF-WAF-XSS-AttackScore",
@@ -253,10 +252,10 @@ THRESHOLD: 3 events in 30 seconds from same ClientIP`,
     siemSeverity: "Medium",
     siemTactic: "Discovery / File Access",
     responseWorkflow: [
-      { step: 1, action: "Get IP Overview", detail: "Enrich and classify source IP" },
-      { step: 2, action: "Create IP Access Rule", detail: "Block ClientIP temporarily (1 hour)" },
-      { step: 3, action: "Update WAF Rule", detail: "Add custom rule for detected traversal pattern if not covered" },
-      { step: 4, action: "Notify SOC", detail: "Alert with traversal payload and target path" }
+      { step: 1, action: "Enrich & investigate — SentinelOne", detail: "Read the attacker src_ip straight off the alert (entity-mapped), then run a native SentinelOne PowerQuery to pull the WAF attack-request count, worst ML attack score, and a sample URI + method for that IP." },
+      { step: 2, action: "Third-party threat intel", detail: "VirusTotal Search-IP + AbuseIPDB Check-IP on the src_ip for reputation and a malicious/clean verdict. (Free API keys — see Setup.)" },
+      { step: 3, action: "Decision — ask Slack (action required)", detail: "Post an interactive Slack message with the evidence summary + false-positive caveat (authorized vulnerability scan / pentest or sanctioned scanner?) and [Block at Cloudflare] / [Dismiss] buttons, then wait for the analyst's choice." },
+      { step: 4, action: "Act & write back to the alert", detail: "Approve → Cloudflare Create-IP-Access-Rule blocks the src_ip at the edge → update Slack → Add Note to the alert → set analyst verdict True-Positive (only if VirusTotal flagged it malicious) else status In-Progress. Dismiss → note + False-Positive verdict." }
     ],
     siem: {
       ruleName: "CF-WAF-PathTraversal-LFI",
@@ -357,12 +356,10 @@ THRESHOLD: 20 distinct UserEmail values
     siemSeverity: "Critical",
     siemTactic: "Credential Access",
     responseWorkflow: [
-      { step: 1, action: "Get Zero Trust User Failed Logins", detail: "Pull full list of failed attempts for ClientIP" },
-      { step: 2, action: "Get IP Overview", detail: "Enrich attacker IP — ASN, country, reputation" },
-      { step: 3, action: "Create IP Access Rule", detail: "Mode: block, IP: {{ClientIP}}" },
-      { step: 4, action: "Update Firewall Rule", detail: "Block IP across all zones, not just Access" },
-      { step: 5, action: "Get User Audit Logs", detail: "Pull last 24h of activity for any accounts that succeeded" },
-      { step: 6, action: "Edit Zone", detail: "Escalate security level to 'Under Attack' for portal zone" }
+      { step: 1, action: "Enrich & investigate — SentinelOne", detail: "Read the attacker src_ip straight off the alert (entity-mapped), then run a native SentinelOne PowerQuery to pull the failed-login count, distinct User-Agents, and any cross-surface hits for that IP." },
+      { step: 2, action: "Third-party threat intel", detail: "VirusTotal Search-IP + AbuseIPDB Check-IP on the src_ip for reputation and a malicious/clean verdict. (Free API keys — see Setup.)" },
+      { step: 3, action: "Decision — ask Slack (action required)", detail: "Post an interactive Slack message with the evidence summary + false-positive caveat (shared VPN/NAT egress?) and [Block at Cloudflare] / [Dismiss] buttons, then wait for the analyst's choice." },
+      { step: 4, action: "Act & write back to the alert", detail: "Approve → Cloudflare Create-IP-Access-Rule blocks the src_ip at the edge → update Slack → Add Note to the alert → set analyst verdict True-Positive (only if VirusTotal flagged it malicious) else status In-Progress. Dismiss → note + False-Positive verdict." }
     ],
     siem: {
       ruleName: "CF-Portal-CredStuffing",
@@ -461,13 +458,10 @@ THRESHOLD: 10 matching events from same ClientIP
     siemSeverity: "Critical",
     siemTactic: "Exfiltration",
     responseWorkflow: [
-      { step: 1, action: "Get IP Overview", detail: "Enrich — is this a known corporate IP or external threat?" },
-      { step: 2, action: "Create Firewall Rules", detail: "Block requests to /export matching ClientIP immediately" },
-      { step: 3, action: "Create IP Access Rule", detail: "IP-level block across all zones" },
-      { step: 4, action: "List Workers", detail: "Check for rogue Workers deployed at API route" },
-      { step: 5, action: "Update WAF Rule", detail: "Reduce rate limit threshold on /export routes" },
-      { step: 6, action: "Create PCAP Request", detail: "Capture remaining traffic from ClientIP" },
-      { step: 7, action: "Update Log Retention", detail: "Extend retention for evidence preservation" }
+      { step: 1, action: "Enrich & investigate — SentinelOne", detail: "Read the attacker src_ip straight off the alert (entity-mapped), then run a native SentinelOne PowerQuery to pull bytes pulled, sensitive endpoints enumerated, and the largest response for that IP." },
+      { step: 2, action: "Third-party threat intel", detail: "VirusTotal Search-IP + AbuseIPDB Check-IP on the src_ip for reputation and a malicious/clean verdict. (Free API keys — see Setup.)" },
+      { step: 3, action: "Decision — ask Slack (action required)", detail: "Post an interactive Slack message with the evidence summary + false-positive caveat (authorized bulk export / ETL pipeline or backup service account?) and [Block at Cloudflare] / [Dismiss] buttons, then wait for the analyst's choice." },
+      { step: 4, action: "Act & write back to the alert", detail: "Approve → Cloudflare Create-IP-Access-Rule blocks the src_ip at the edge → update Slack → Add Note to the alert → set analyst verdict True-Positive (only if VirusTotal flagged it malicious) else status In-Progress. Dismiss → note + False-Positive verdict." }
     ],
     siem: {
       ruleName: "CF-API-BulkExfil-Enum",
@@ -568,10 +562,10 @@ THRESHOLD: >=20 requests from same ClientIP against api.* paths`,
     siemSeverity: "High",
     siemTactic: "Reconnaissance / Automated Collection",
     responseWorkflow: [
-      { step: 1, action: "Get IP Overview", detail: "Enrich ClientIP and ASN — hosting/datacenter ranges corroborate automation" },
-      { step: 2, action: "Create WAF Rule", detail: "Challenge or block requests from the source scoring BotScore ≤ 29" },
-      { step: 3, action: "Enable Bot Fight Mode", detail: "Raise Bot Management enforcement on the api zone" },
-      { step: 4, action: "Notify SOC", detail: "Report the source IP, UA list, min BotScore, and probed endpoints" }
+      { step: 1, action: "Enrich & investigate — SentinelOne", detail: "Read the attacker src_ip straight off the alert (entity-mapped), then run a native SentinelOne PowerQuery to pull the low-BotScore request count, distinct paths crawled, and the average BotScore for that IP." },
+      { step: 2, action: "Third-party threat intel", detail: "VirusTotal Search-IP + AbuseIPDB Check-IP on the src_ip for reputation and a malicious/clean verdict. (Free API keys — see Setup.)" },
+      { step: 3, action: "Decision — ask Slack (action required)", detail: "Post an interactive Slack message with the evidence summary + false-positive caveat (legitimate crawler — Googlebot/Bingbot, uptime/SEO monitor, or approved partner integration?) and [Block at Cloudflare] / [Dismiss] buttons, then wait for the analyst's choice." },
+      { step: 4, action: "Act & write back to the alert", detail: "Approve → Cloudflare Create-IP-Access-Rule blocks the src_ip at the edge → update Slack → Add Note to the alert → set analyst verdict True-Positive (only if VirusTotal flagged it malicious) else status In-Progress. Dismiss → note + False-Positive verdict." }
     ],
     siem: {
       ruleName: "CF-Bot-Scraper — Low-BotScore Automated Scraping against NovaMind",
@@ -669,10 +663,10 @@ THRESHOLD: >=10 POSTs from same ClientIP
     siemSeverity: "High",
     siemTactic: "AI Attack / LLM Prompt Injection",
     responseWorkflow: [
-      { step: 1, action: "Get IP Overview", detail: "Enrich the source IP of the injection burst" },
-      { step: 2, action: "Create WAF Rule", detail: "Rate-limit or block POSTs to /api/v1/chat from the source" },
-      { step: 3, action: "Enable Firewall for AI", detail: "Turn on prompt-injection scoring / guardrails on the AI Gateway" },
-      { step: 4, action: "Notify SOC", detail: "Report the source, request rate, and endpoint for LLM-abuse review" }
+      { step: 1, action: "Enrich & investigate — SentinelOne", detail: "Read the attacker src_ip straight off the alert (entity-mapped), then run a native SentinelOne PowerQuery to pull the injection-attempt count, max attack score, and a sample payload/User-Agent for that IP." },
+      { step: 2, action: "Third-party threat intel", detail: "VirusTotal Search-IP + AbuseIPDB Check-IP on the src_ip for reputation and a malicious/clean verdict. (Free API keys — see Setup.)" },
+      { step: 3, action: "Decision — ask Slack (action required)", detail: "Post an interactive Slack message with the evidence summary + false-positive caveat (authorized red-team / QA harness or sanctioned LLM-security scanner?) and [Block at Cloudflare] / [Dismiss] buttons, then wait for the analyst's choice." },
+      { step: 4, action: "Act & write back to the alert", detail: "Approve → Cloudflare Create-IP-Access-Rule blocks the src_ip at the edge → update Slack → Add Note to the alert → set analyst verdict True-Positive (only if VirusTotal flagged it malicious) else status In-Progress. Dismiss → note + False-Positive verdict." }
     ],
     siem: {
       ruleName: "CF-FirewallForAI-PromptInjection",
@@ -772,12 +766,10 @@ THRESHOLD: 10 queries to same root domain
     siemSeverity: "High",
     siemTactic: "Command and Control / Exfiltration",
     responseWorkflow: [
-      { step: 1, action: "Get IP Overview", detail: "Enrich resolved IP of C2 domain" },
-      { step: 2, action: "Create DNS Record", detail: "Sinkhole: create A record for {{C2Domain}} → 0.0.0.0" },
-      { step: 3, action: "Create DNS Firewall Cluster", detail: "Block C2 domain at Gateway layer" },
-      { step: 4, action: "Create IP Access Rule", detail: "Block source device IP at zone level" },
-      { step: 5, action: "Create PCAP Request", detail: "Capture 120s for forensic DNS analysis" },
-      { step: 6, action: "Update Log Retention", detail: "Preserve Gateway DNS logs for investigation" }
+      { step: 1, action: "Enrich & investigate — SentinelOne", detail: "Read the attacker src_ip straight off the alert (entity-mapped), then run a native SentinelOne PowerQuery to pull DNS query volume, distinct + long subdomains, and the suspected C2 domain for that IP." },
+      { step: 2, action: "Third-party threat intel", detail: "VirusTotal Search-IP + AbuseIPDB Check-IP on the src_ip for reputation and a malicious/clean verdict. (Free API keys — see Setup.)" },
+      { step: 3, action: "Decision — ask Slack (action required)", detail: "Post an interactive Slack message with the evidence summary + false-positive caveat (shared resolver/forwarder egress or a legitimate high-cardinality cloud service?) and [Block at Cloudflare] / [Dismiss] buttons, then wait for the analyst's choice." },
+      { step: 4, action: "Act & write back to the alert", detail: "Approve → Cloudflare Create-IP-Access-Rule blocks the src_ip at the edge → update Slack → Add Note to the alert → set analyst verdict True-Positive (only if VirusTotal flagged it malicious) else status In-Progress. Dismiss → note + False-Positive verdict." }
     ],
     siem: {
       ruleName: "CF-Gateway-DNSTunnel",
@@ -889,24 +881,10 @@ THRESHOLD: exploit_hits >= 2 AND exfil_hits >= 3 from same source`,
     siemSeverity: "High",
     siemTactic: "T1190 Exploit Public-Facing Application + T1119/T1020 Automated Collection & Exfiltration",
     responseWorkflow: [
-      { step: 1, action: "Box 1 — Detect the recon trigger", detail: "SoleDrop CTF Box 1 rule fires: one source IP hits 12+ distinct paths or 5+ scanner-UA requests within the 1-min window." },
-      { step: 2, action: "Box 1 — Auto-block the source IP", detail: "Push a Cloudflare WAF custom rule via API blocking the offending ClientIP at the edge." },
-      { step: 3, action: "Box 1 — Create a threat-intel IOC", detail: "Log the IP as an IOC in SentinelOne so it's flagged instantly if it reappears in a later box or a future run." },
-      { step: 4, action: "Box 1 — Page the on-call SOC analyst", detail: "Notify with the recon summary — distinct paths touched, scanner UA, timestamp range." },
-      { step: 5, action: "Box 2 — Confirm the swarm fingerprint", detail: "PowerQuery groups by TLS (JA3) fingerprint; 6+ distinct User-Agents on one fingerprint confirms a polymorphic bot swarm, not organic shopper traffic." },
-      { step: 6, action: "Box 2 — Enrich with threat intel", detail: "Cross-reference the fingerprint and its source IPs against Cloudflare threat-intel feeds for known botnet/scraper reputation." },
-      { step: 7, action: "Box 2 — Block the fingerprint", detail: "Push a Cloudflare WAF custom rule blocking requests matching the identified TLS fingerprint, regardless of User-Agent." },
-      { step: 8, action: "Box 2 — Enable a drop-day Waiting Room", detail: "Turn on a Cloudflare Waiting Room in front of checkout to absorb remaining swarm volume without impacting real shoppers." },
-      { step: 9, action: "Box 2 — Summarize via Purple AI", detail: "Have SentinelOne Purple AI synthesize the swarm's behavior into one narrative for the SOC handoff." },
-      { step: 10, action: "Box 3 — Correlate injection + repeat offender", detail: "A high FirewallForAIInjectionScore combined with a fingerprint already flagged in Box 1/2 raises this to a linked, high-severity finding." },
-      { step: 11, action: "Box 3 — Open a linked incident", detail: "SentinelOne SOAR creates one high-severity incident spanning Box 1, 2, and 3 — same actor, escalating tactics." },
-      { step: 12, action: "Box 3 — Challenge the concierge endpoint", detail: "Apply a Cloudflare managed challenge (Turnstile) to POST /api/v1/chat to stop further injection attempts." },
-      { step: 13, action: "Box 3 — Contain the account takeover", detail: "Force a password reset and revoke active sessions on every account hit by the credential-stuffing burst." },
-      { step: 14, action: "Box 4 — Block IP + fingerprint together", detail: "Push a combined Cloudflare Firewall rule blocking both the source IP and its TLS fingerprint — closes the door on simple IP rotation." },
-      { step: 15, action: "Box 4 — Escalate to a critical incident", detail: "SentinelOne opens a critical incident with the full 4-box timeline attached as evidence." },
-      { step: 16, action: "Box 4 — Lock down checkout", detail: "Enable the Waiting Room across every checkout/cart endpoint to fully contain the breakout." },
-      { step: 17, action: "Box 4 — Revoke credentials", detail: "Revoke API keys and sessions tied to the matching fingerprint across every endpoint it touched." },
-      { step: 18, action: "Box 4 — Page critical", detail: "Trigger a PagerDuty critical page — the full playbook runs automated in under 90 seconds." },
+      { step: 1, action: "Enrich & investigate — SentinelOne", detail: "Read the attacker src_ip straight off the alert (entity-mapped, fires on any of the 4 boxes), then run a native SentinelOne PowerQuery to pull the JA3 fingerprint, distinct User-Agent count, and recon + injection/RCE signal counts for that IP." },
+      { step: 2, action: "Third-party threat intel", detail: "VirusTotal Search-IP + AbuseIPDB Check-IP on the src_ip for reputation and a malicious/clean verdict. (Free API keys — see Setup.)" },
+      { step: 3, action: "Decision — ask Slack (action required)", detail: "Post an interactive Slack message with the evidence summary + false-positive caveat (shared corporate VPN/NAT egress or a sanctioned scanner?) and [Block at Cloudflare] / [Dismiss] buttons, then wait for the analyst's choice." },
+      { step: 4, action: "Act & write back to the alert", detail: "Approve → Cloudflare Create-IP-Access-Rule blocks the src_ip at the edge → update Slack → Add Note to the alert → set analyst verdict True-Positive (only if VirusTotal flagged it malicious) else status In-Progress. Dismiss → note + False-Positive verdict." }
     ],
     siem: {
       ruleName: "SoleDrop CTF — Box 4 Breakout (exploit + exfil correlation)",
