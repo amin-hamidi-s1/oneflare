@@ -250,7 +250,7 @@ def admin_request(method: str, path: str, json_body: Optional[dict] = None) -> t
     return resp.status_code, body
 
 
-def s1_config_raw(email: str) -> tuple[int, dict]:
+def s1_config_raw(email: str, connection_id: Optional[str] = None) -> tuple[int, dict]:
     """Fetch a user's RAW SentinelOne deploy creds from the relay (Phase 2).
 
     Uses the console break-glass ADMIN_TOKEN to hit the relay's
@@ -269,10 +269,13 @@ def s1_config_raw(email: str) -> tuple[int, dict]:
         return 403, {"error": "ADMIN_TOKEN not configured (console-only feature)"}
     import httpx
 
+    params = {"email": email}
+    if connection_id:
+        params["id"] = connection_id
     try:
         resp = httpx.get(
             f"{base}/auth/s1/config-raw",
-            params={"email": email},
+            params=params,
             headers={"Authorization": f"Bearer {token}"},
             timeout=15,
         )

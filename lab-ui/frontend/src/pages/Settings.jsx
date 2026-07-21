@@ -770,7 +770,7 @@ export default function Settings() {
       {/* Section 0: Lab Identity — multi-tenant relay registration */}
       <LabIdentitySection serverConfig={serverConfig} />
 
-      {/* Section 0a: Deploy the lab's knowledge objects to your own S1 site */}
+      {/* Section 0a: Deploy the lab's SentinelOne assets to your own S1 console(s) */}
       <DeployKnowledgeObjects />
 
       {/* Section 0b: Default run target — admin-only */}

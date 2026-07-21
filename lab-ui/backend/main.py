@@ -107,13 +107,27 @@ class AcceptRequestReq(BaseModel):
 
 # ── Phase 2 "Deploy Knowledge Objects" ──────────────────────────────────────
 class DeployConfigReq(BaseModel):
-    # The caller's OWN SentinelOne console. api_token/sdl_write_key are optional
-    # so a later save can update just the SDL fields without re-sending the token
-    # (the relay preserves an existing secret when the field is null).
+    # One of the caller's OWN SentinelOne consoles. `id` targets an existing
+    # connection to update in place (rename / re-region / rotate token); omit it to
+    # add a new connection. api_token/sdl_write_key are optional so a later save can
+    # update just the SDL fields without re-sending the token (the relay preserves an
+    # existing secret when the field is null). make_default marks this the default.
     console_url: str
     api_token: Optional[str] = None
     sdl_xdr_url: Optional[str] = None
     sdl_write_key: Optional[str] = None
+    id: Optional[str] = None
+    label: Optional[str] = None
+    make_default: Optional[bool] = None
+
+
+class DeployDefaultReq(BaseModel):
+    id: str
+
+
+class DeployValidateReq(BaseModel):
+    # Which stored connection to validate. Omit to use the caller's default.
+    connection_id: Optional[str] = None
 
 
 class DeployObject(BaseModel):
@@ -128,6 +142,9 @@ class DeployObject(BaseModel):
 
 class DeployRunReq(BaseModel):
     objects: list[DeployObject] = []
+    # Which stored connection to deploy to. Omit to use the caller's default. The
+    # wizard fans out across multiple targets by calling this once per connection_id.
+    connection_id: Optional[str] = None
 
 SCRIPTS_DIR = Path("/app/attack-scripts")
 
@@ -1156,17 +1173,18 @@ def _audit(event: dict):
         pass
 
 
-def _deploy_load_creds(request: Request):
-    """Resolve the caller's session email, then pull their RAW S1 deploy creds
-    from the relay (ADMIN_TOKEN break-glass). Raises HTTPException on any gap.
-    Returns (email, cfg) where cfg has console_url/api_token/sdl_*."""
+def _deploy_load_creds(request: Request, connection_id: Optional[str] = None):
+    """Resolve the caller's session email, then pull the RAW S1 deploy creds for
+    the requested connection (or their default) from the relay (ADMIN_TOKEN
+    break-glass). Raises HTTPException on any gap. Returns (session, cfg) where cfg
+    has console_url/api_token/sdl_* for the resolved connection."""
     if not _multi_user_mode():
         raise HTTPException(status_code=400, detail="Deploy is a multi-user console feature.")
     session = _session_from_cookies(dict(request.cookies))
     if not session:
         raise HTTPException(status_code=401, detail="login required")
     email = session["email"]
-    status, cfg = _li.s1_config_raw(email)
+    status, cfg = _li.s1_config_raw(email, connection_id)
     if status == 404:
         raise HTTPException(status_code=400,
                             detail="No SentinelOne console configured — save your console URL + API token first.")
@@ -1327,16 +1345,26 @@ def deploy_config_post(request: Request, body: DeployConfigReq):
 
 @app.delete("/api/deploy/config")
 def deploy_config_delete(request: Request):
-    """Clear the caller's stored S1 deploy config."""
-    return _proxy_auth(request, "DELETE", "/auth/s1/config")
+    """Remove one stored S1 connection (?id=<id>), or all of them when no id is
+    given. The `id` query param passes straight through to the relay."""
+    qid = request.query_params.get("id")
+    path = f"/auth/s1/config?id={qid}" if qid else "/auth/s1/config"
+    return _proxy_auth(request, "DELETE", path)
+
+
+@app.post("/api/deploy/config/default")
+def deploy_config_default(request: Request, body: DeployDefaultReq):
+    """Mark one of the caller's stored connections as the default deploy target."""
+    return _proxy_auth(request, "POST", "/auth/s1/config/default", body.dict())
 
 
 @app.post("/api/deploy/validate")
-def deploy_validate(request: Request):
-    """Validate the caller's stored S1 creds: resolve their site + probe which
-    object types can be deployed. Never echoes the token.
-    Response: {ok, console_url, site:{id,name,accountId}, capabilities:{detections,ha,dashboards}, messages:[]}."""
-    _session, cfg = _deploy_load_creds(request)
+def deploy_validate(request: Request, body: DeployValidateReq = DeployValidateReq()):
+    """Validate one of the caller's stored S1 connections (body.connection_id, or
+    the default): resolve its site + probe which object types can be deployed. Never
+    echoes the token.
+    Response: {ok, connection_id, console_url, site:{id,name,accountId}, capabilities:{detections,ha,dashboards}, messages:[]}."""
+    _session, cfg = _deploy_load_creds(request, body.connection_id)
     console = cfg["console_url"].rstrip("/")
     token = cfg["api_token"]
     messages: list = []
@@ -1366,7 +1394,8 @@ def deploy_validate(request: Request):
                             "SDL Dashboards + SDL Configuration Files permissions, or set the SDL XDR URL manually")
     else:
         messages.append("Could not auto-detect your SDL region — set the SDL XDR URL to deploy dashboards")
-    return {"ok": True, "console_url": console, "site": site, "capabilities": caps, "messages": messages}
+    return {"ok": True, "connection_id": cfg.get("connection_id"), "label": cfg.get("label"),
+            "console_url": console, "site": site, "capabilities": caps, "messages": messages}
 
 
 @app.post("/api/deploy/run")
@@ -1383,7 +1412,7 @@ def deploy_run(request: Request, body: DeployRunReq):
             return None
 
     try:
-        session, cfg = _deploy_load_creds(request)
+        session, cfg = _deploy_load_creds(request, body.connection_id)
     except HTTPException as exc:
         _audit({"type": "dko_deploy_failure", "status": "failure",
                 "actor": _resolved_email(), "reason": exc.detail})
@@ -1423,6 +1452,7 @@ def deploy_run(request: Request, body: DeployRunReq):
         "type": "dko_deploy",
         "status": "success" if failed == 0 else "failure",
         "actor": session.get("email"),
+        "console_url": console,
         "site": site.get("name"),
         "site_id": site.get("id"),
         "deployed": deployed,
@@ -1431,4 +1461,5 @@ def deploy_run(request: Request, body: DeployRunReq):
         "failures": [{"key": r["key"], "type": r["type"], "message": r.get("message")}
                      for r in results if r.get("status") == "error"],
     })
-    return {"ok": True, "site": site, "results": results}
+    return {"ok": True, "connection_id": cfg.get("connection_id"), "label": cfg.get("label"),
+            "console_url": console, "site": site, "results": results}

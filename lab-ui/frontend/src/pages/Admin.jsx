@@ -319,7 +319,7 @@ const EVENT_LABELS = {
   teardown: 'Site removed',
   enable: 'Tenant enabled',
   disable: 'Tenant disabled',
-  dko_deploy: 'Knowledge objects deployed',
+  dko_deploy: 'SentinelOne assets deployed',
   dko_deploy_failure: 'Deploy failed',
   s1cfg_saved: 'S1 deploy config saved',
   s1cfg_deleted: 'S1 deploy config removed',

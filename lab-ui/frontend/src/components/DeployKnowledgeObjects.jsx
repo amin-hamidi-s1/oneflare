@@ -2,24 +2,27 @@ import { useState, useEffect } from 'react'
 import {
   Rocket, X, CheckCircle2, XCircle, AlertTriangle, Loader2, Info,
   ChevronDown, ChevronUp, KeyRound, RefreshCw, Pencil, Unlink, Lock,
-  Shield, Workflow, LayoutDashboard, ServerCog, Circle,
+  Shield, Workflow, LayoutDashboard, ServerCog, Circle, Plus, Star, Server,
 } from 'lucide-react'
 import Badge from './Badge.jsx'
 import { KNOWLEDGE_OBJECT_GROUPS } from '../data/knowledgeObjects.js'
 import { loadHaWorkflowJson } from '../data/haPlaybooks.js'
 
-// Deploy wizard — pushes the lab's canonical knowledge objects (detections,
+// Deploy wizard — pushes the lab's canonical SentinelOne assets (detections,
 // Hyperautomation workflows, dashboards — see src/data/knowledgeObjects.js)
-// to a signed-in user's OWN SentinelOne console via the session-gated
+// to a signed-in user's OWN SentinelOne console(s) via the session-gated
 // /api/deploy/* backend contract:
-//   GET    /api/deploy/config    -> {configured, console_url, has_token, sdl_xdr_url, updated_at}
-//   POST   /api/deploy/config    -> same shape (secrets write-only, never echoed back)
-//   DELETE /api/deploy/config    -> {ok, deleted}
-//   POST   /api/deploy/validate  -> {ok, console_url, site, capabilities, messages}
-//   POST   /api/deploy/run       -> {ok, site, results:[{key,type,status,id?,message}]}
+//   GET    /api/deploy/config          -> {configured, connections:[...], default_id}
+//   POST   /api/deploy/config          -> same shape (add or update one connection; secrets write-only)
+//   POST   /api/deploy/config/default  -> same shape (mark a connection default)
+//   DELETE /api/deploy/config[?id=]    -> same shape (remove one connection, or all)
+//   POST   /api/deploy/validate        -> {ok, connection_id, console_url, site, capabilities, messages}
+//   POST   /api/deploy/run             -> {ok, connection_id, console_url, site, results:[...]}
 //
-// Four steps: Configure -> Validate -> Select -> Deploy. Every fetch handles
-// 401 (sign in) and 403 (read-only role) the same way everywhere via `gate`.
+// A user can save MULTIPLE consoles and pick one OR MORE as deploy targets; the
+// wizard fans out validate/run once per selected target. Four steps:
+// Configure -> Validate -> Select -> Deploy. Every fetch handles 401 (sign in)
+// and 403 (read-only role) the same way everywhere via `gate`.
 
 const STEPS = [
   { id: 'configure', label: 'Configure' },
@@ -30,6 +33,7 @@ const STEPS = [
 
 const GROUP_ICON = { detection: Shield, ha: Workflow, dashboard: LayoutDashboard }
 const CAP_KEY = { detection: 'detections', ha: 'ha', dashboard: 'dashboards' }
+const CAP_KEYS = ['detections', 'ha', 'dashboards']
 const CAPABILITY_ROWS = [
   { key: 'detections', label: 'Detections' },
   { key: 'ha', label: 'Hyperautomation' },
@@ -43,6 +47,16 @@ for (const group of KNOWLEDGE_OBJECT_GROUPS) {
   for (const item of group.items) ITEM_BY_ID[`${group.type}:${item.key}`] = item
 }
 const idFor = (type, key) => `${type}:${key}`
+
+// AND the capabilities across a set of validated targets — an asset type is only
+// offered in Select if EVERY selected (and successfully validated) target supports
+// it, so a chosen object can never fail on a target that lacks the capability.
+function intersectCaps(list) {
+  if (!list.length) return {}
+  const out = {}
+  for (const k of CAP_KEYS) out[k] = list.every((c) => !!(c && c[k]))
+  return out
+}
 
 function formatTime(iso) {
   if (!iso) return '—'
@@ -141,65 +155,120 @@ function GateScreen({ kind }) {
       <p className="text-xs text-slate-500 max-w-sm leading-relaxed">
         {signin
           ? 'Your session has expired or you are not signed in. Use the account menu in the top-right of the navbar to sign in, then reopen this wizard.'
-          : 'Your account has the viewer role, which can browse the lab but cannot push knowledge objects to a console. Ask an admin to upgrade your role to user or admin.'}
+          : 'Your account has the viewer role, which can browse the lab but cannot push SentinelOne assets to a console. Ask an admin to upgrade your role to user or admin.'}
       </p>
     </div>
   )
 }
 
-// ── Step 1: Configure ────────────────────────────────────────────────────────
+// ── Step 1: Configure — connections manager ──────────────────────────────────
 
-function ConnectedBanner({ config, onSelectDatasets, onRevalidate, onEdit, onDisconnect, disconnecting }) {
+// One saved-connection row: a target checkbox, its identity, and per-row actions.
+function ConnectionRow({ conn, checked, busy, onToggleTarget, onSetDefault, onEdit, onRemove }) {
   return (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-green-500/25 bg-green-500/5 p-4 flex items-start gap-3">
-        <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0 mt-0.5" />
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-slate-100">
-            Connected to <span className="font-mono text-green-300">{hostOf(config.console_url) || config.console_url}</span>
-          </p>
-          <p className="text-xs text-slate-500 font-mono mt-0.5 truncate">{config.console_url}</p>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-slate-400">
-            <span className="flex items-center gap-1.5">
-              <KeyRound className="w-3 h-3" /> API token stored
+    <div className="flex items-start gap-3 px-4 py-3 border-b border-[#1e1235] last:border-0">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={() => onToggleTarget(conn.id)}
+        className="accent-orange-500 shrink-0 mt-1"
+        aria-label={`Select ${conn.label} as a deploy target`}
+      />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm font-semibold text-slate-100 truncate">{conn.label || hostOf(conn.console_url)}</span>
+          {conn.is_default && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/30 px-2 py-0.5 text-[10px] font-semibold">
+              <Star className="w-2.5 h-2.5 fill-orange-400" /> Default
             </span>
-            {config.sdl_xdr_url && (
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3 h-3 text-green-400" />
-                SDL region override: <span className="font-mono">{hostOf(config.sdl_xdr_url)}</span>
-              </span>
-            )}
-            {config.updated_at && <span className="text-slate-600">Updated {formatTime(config.updated_at)}</span>}
-          </div>
+          )}
+        </div>
+        <p className="text-xs text-slate-500 font-mono mt-0.5 truncate">{conn.console_url}</p>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-slate-400">
+          <span className="flex items-center gap-1.5">
+            {conn.has_token ? <KeyRound className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3 text-yellow-400" />}
+            {conn.has_token ? 'API token stored' : 'no token'}
+          </span>
+          {conn.sdl_xdr_url && (
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-3 h-3 text-green-400" />
+              SDL: <span className="font-mono">{hostOf(conn.sdl_xdr_url)}</span>
+            </span>
+          )}
+          {conn.updated_at && <span className="text-slate-600">Updated {formatTime(conn.updated_at)}</span>}
+        </div>
+        <div className="flex flex-wrap items-center gap-2 mt-2.5">
+          {!conn.is_default && (
+            <button onClick={() => onSetDefault(conn.id)} disabled={busy} className="btn-ghost text-[11px] px-2 py-1 disabled:opacity-40">
+              <Star className="w-3 h-3" /> Set default
+            </button>
+          )}
+          <button onClick={() => onEdit(conn)} disabled={busy} className="btn-ghost text-[11px] px-2 py-1 disabled:opacity-40">
+            <Pencil className="w-3 h-3" /> Edit
+          </button>
+          <button
+            onClick={() => onRemove(conn.id)}
+            disabled={busy}
+            className="btn-ghost text-[11px] px-2 py-1 text-red-400 hover:text-red-300 hover:border-red-500/30 disabled:opacity-40"
+          >
+            <Unlink className="w-3 h-3" /> Remove
+          </button>
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <button onClick={onSelectDatasets} className="btn-primary text-xs">
-          <ServerCog className="w-3.5 h-3.5" /> Select datasets
-        </button>
-        <button onClick={onRevalidate} className="btn-ghost text-xs">
-          <RefreshCw className="w-3.5 h-3.5" /> Re-validate
-        </button>
-        <button onClick={onEdit} className="btn-ghost text-xs">
-          <Pencil className="w-3.5 h-3.5" /> Edit
-        </button>
-        <button
-          onClick={onDisconnect}
-          disabled={disconnecting}
-          className="btn-ghost text-xs text-red-400 hover:text-red-300 hover:border-red-500/30 disabled:opacity-40 ml-auto"
-        >
-          <Unlink className="w-3.5 h-3.5" /> {disconnecting ? 'Disconnecting...' : 'Disconnect'}
-        </button>
+    </div>
+  )
+}
+
+function ConnectionsManager({
+  connections, targets, busyId,
+  onToggleTarget, onSetDefault, onEdit, onRemove, onAdd,
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border border-[#2d1b4e] bg-white/[0.02] px-3 py-2.5 text-xs text-slate-400 flex items-start gap-2.5">
+        <Info className="w-3.5 h-3.5 text-orange-400 shrink-0 mt-0.5" />
+        <span>
+          Select one or more consoles below as deploy targets — the same SentinelOne assets are pushed to
+          every checked target in one run. Add as many connections as you like; no need to disconnect to switch.
+        </span>
       </div>
+
+      <div className="rounded-xl border border-[#2d1b4e] overflow-hidden">
+        <div className="px-4 py-2.5 bg-[#1a0a2e] border-b border-[#2d1b4e] flex items-center gap-2">
+          <Server className="w-3.5 h-3.5 text-orange-400" />
+          <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Your SentinelOne consoles</span>
+          <span className="text-xs font-mono text-slate-500 ml-auto">{targets.size} of {connections.length} selected</span>
+        </div>
+        <div>
+          {connections.map((conn) => (
+            <ConnectionRow
+              key={conn.id}
+              conn={conn}
+              checked={targets.has(conn.id)}
+              busy={busyId === conn.id}
+              onToggleTarget={onToggleTarget}
+              onSetDefault={onSetDefault}
+              onEdit={onEdit}
+              onRemove={onRemove}
+            />
+          ))}
+        </div>
+      </div>
+
+      <button onClick={onAdd} className="btn-ghost text-xs">
+        <Plus className="w-3.5 h-3.5" /> Add connection
+      </button>
     </div>
   )
 }
 
 function ConfigForm({
   isEdit, hasStoredToken,
+  label, setLabel,
   consoleUrl, setConsoleUrl,
   apiToken, setApiToken,
   sdlXdrUrl, setSdlXdrUrl,
+  makeDefault, setMakeDefault, showMakeDefault,
   saveError, onSubmit,
 }) {
   const [showAdvanced, setShowAdvanced] = useState(false)
@@ -226,6 +295,17 @@ function ConfigForm({
       </div>
 
       <div>
+        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Label <span className="text-slate-600 normal-case font-normal">— optional</span></label>
+        <input
+          type="text"
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          placeholder="e.g. Acme prod · Partner tenant (defaults to the console host)"
+          className="w-full rounded-lg bg-[#12081f] border border-[#2d1b4e] px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-orange-500/50"
+        />
+      </div>
+
+      <div>
         <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Console URL</label>
         <input
           type="url"
@@ -249,6 +329,18 @@ function ConfigForm({
           className="w-full rounded-lg bg-[#12081f] border border-[#2d1b4e] px-3 py-2 text-sm text-slate-200 font-mono focus:outline-none focus:border-orange-500/50"
         />
       </div>
+
+      {showMakeDefault && (
+        <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={makeDefault}
+            onChange={(e) => setMakeDefault(e.target.checked)}
+            className="accent-orange-500"
+          />
+          Make this the default deploy target
+        </label>
+      )}
 
       <div className="collapsible-section">
         <button
@@ -288,80 +380,91 @@ function ConfigForm({
   )
 }
 
-// ── Step 2: Validate ─────────────────────────────────────────────────────────
+// ── Step 2: Validate — one card per selected target ──────────────────────────
 
-function ValidateStepView({ validating, validateError, validateResult }) {
-  if (validating) return <LoadingBlock text="Validating connection..." />
-  if (validateError) return <ErrorBlock text={validateError} />
-  if (!validateResult) return <ErrorBlock text="No validation result yet." />
-
-  const caps = validateResult.capabilities || {}
-  const site = validateResult.site || {}
-
+function TargetValidateCard({ result }) {
+  const caps = result.capabilities || {}
+  const site = result.site || {}
   return (
-    <div className="space-y-4">
-      {validateResult.ok ? (
-        <div className="rounded-xl border border-green-500/25 bg-green-500/5 p-4 flex items-start gap-3">
-          <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-semibold text-slate-100">Connection validated</p>
-            <p className="text-xs text-slate-500 font-mono mt-0.5">{validateResult.console_url}</p>
-          </div>
+    <div className="rounded-xl border border-[#2d1b4e] overflow-hidden">
+      <div className="px-4 py-2.5 bg-[#1a0a2e] border-b border-[#2d1b4e] flex items-center gap-2 flex-wrap">
+        {result.loading
+          ? <Loader2 className="w-4 h-4 text-orange-400 animate-spin shrink-0" />
+          : result.ok
+            ? <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />
+            : <XCircle className="w-4 h-4 text-red-400 shrink-0" />}
+        <span className="text-sm font-semibold text-slate-100 truncate">{result.label || hostOf(result.console_url)}</span>
+        <span className="text-[11px] font-mono text-slate-500 truncate">{hostOf(result.console_url)}</span>
+      </div>
+
+      {result.loading ? (
+        <div className="px-4 py-4 text-xs text-slate-400 flex items-center gap-2">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Validating connection...
+        </div>
+      ) : result.error ? (
+        <div className="px-4 py-3 flex items-start gap-2">
+          <XCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+          <p className="text-xs text-red-400">{result.error}</p>
         </div>
       ) : (
-        <div className="rounded-xl border border-red-500/25 bg-red-500/5 p-4 flex items-start gap-3">
-          <XCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-          <p className="text-sm text-slate-200">Validation failed. Check the console URL and API token in Configure, then retry.</p>
-        </div>
+        <>
+          <div className="p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs border-b border-[#1e1235]">
+            <div>
+              <p className="text-slate-500 uppercase tracking-wider mb-0.5">Site</p>
+              <p className="text-slate-200 font-mono truncate">{site.name || '—'}</p>
+            </div>
+            <div>
+              <p className="text-slate-500 uppercase tracking-wider mb-0.5">Site ID</p>
+              <p className="text-slate-200 font-mono truncate">{site.id || '—'}</p>
+            </div>
+            <div>
+              <p className="text-slate-500 uppercase tracking-wider mb-0.5">Account ID</p>
+              <p className="text-slate-200 font-mono truncate">{site.accountId || '—'}</p>
+            </div>
+          </div>
+          <div className="px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+            {CAPABILITY_ROWS.map((row) => {
+              const ok = !!caps[row.key]
+              return (
+                <span key={row.key} className="flex items-center gap-1.5 text-xs">
+                  {ok ? <CheckCircle2 className="w-3.5 h-3.5 text-green-400" /> : <XCircle className="w-3.5 h-3.5 text-slate-600" />}
+                  <span className={ok ? 'text-slate-200' : 'text-slate-500'}>{row.label}</span>
+                </span>
+              )
+            })}
+          </div>
+          {Array.isArray(result.messages) && result.messages.length > 0 && (
+            <div className="px-4 pb-3 space-y-1">
+              {result.messages.map((m, i) => (
+                <p key={i} className="text-[11px] text-slate-500 flex items-start gap-1.5">
+                  <Info className="w-3 h-3 text-slate-600 shrink-0 mt-0.5" /> {m}
+                </p>
+              ))}
+            </div>
+          )}
+        </>
       )}
+    </div>
+  )
+}
 
-      <div className="rounded-xl border border-[#2d1b4e] overflow-hidden">
-        <div className="px-4 py-2.5 bg-[#1a0a2e] border-b border-[#2d1b4e] flex items-center gap-2">
-          <ServerCog className="w-3.5 h-3.5 text-orange-400" />
-          <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Resolved site</span>
-        </div>
-        <div className="p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-          <div>
-            <p className="text-slate-500 uppercase tracking-wider mb-0.5">Name</p>
-            <p className="text-slate-200 font-mono truncate">{site.name || '—'}</p>
-          </div>
-          <div>
-            <p className="text-slate-500 uppercase tracking-wider mb-0.5">Site ID</p>
-            <p className="text-slate-200 font-mono truncate">{site.id || '—'}</p>
-          </div>
-          <div>
-            <p className="text-slate-500 uppercase tracking-wider mb-0.5">Account ID</p>
-            <p className="text-slate-200 font-mono truncate">{site.accountId || '—'}</p>
-          </div>
-        </div>
+function ValidateStepView({ validating, results }) {
+  if (!results.length) return <ErrorBlock text="No targets selected to validate." />
+  const anyOk = results.some((r) => r.ok)
+  const okCount = results.filter((r) => r.ok).length
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border border-[#2d1b4e] bg-white/[0.02] px-3 py-2.5 text-xs text-slate-400 flex items-center gap-2.5">
+        <Info className="w-3.5 h-3.5 text-orange-400 shrink-0" />
+        <span>
+          {validating
+            ? 'Validating each selected console...'
+            : anyOk
+              ? `${okCount} of ${results.length} target${results.length === 1 ? '' : 's'} validated — deploy will run against the validated ones.`
+              : 'No target validated. Fix the console URL / API token in Configure and retry.'}
+        </span>
       </div>
-
-      <div className="rounded-xl border border-[#2d1b4e] overflow-hidden">
-        <div className="px-4 py-2.5 bg-[#1a0a2e] border-b border-[#2d1b4e]">
-          <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Capabilities</span>
-        </div>
-        <div className="divide-y divide-[#1e1235]">
-          {CAPABILITY_ROWS.map((row) => {
-            const ok = !!caps[row.key]
-            return (
-              <div key={row.key} className="flex items-center gap-2.5 px-4 py-2.5 text-sm">
-                {ok ? <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> : <XCircle className="w-4 h-4 text-slate-600 shrink-0" />}
-                <span className={ok ? 'text-slate-200' : 'text-slate-500'}>{row.label}</span>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {Array.isArray(validateResult.messages) && validateResult.messages.length > 0 && (
-        <div className="rounded-lg border border-[#2d1b4e] bg-white/[0.02] p-3 space-y-1.5">
-          {validateResult.messages.map((m, i) => (
-            <p key={i} className="text-xs text-slate-400 flex items-start gap-2">
-              <Info className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" /> {m}
-            </p>
-          ))}
-        </div>
-      )}
+      {results.map((r) => <TargetValidateCard key={r.connection_id} result={r} />)}
     </div>
   )
 }
@@ -441,8 +544,8 @@ function GroupSection({ group, capabilities, selected, onToggleItem, onToggleGro
           <AlertTriangle className="w-3.5 h-3.5 text-yellow-400 shrink-0 mt-0.5" />
           <p className="text-xs text-yellow-400/80">
             {group.type === 'dashboard'
-              ? 'Set the SDL XDR URL in Configure (or grant your token SDL Dashboards + SDL Configuration Files) to enable dashboards.'
-              : `This console did not report the "${CAP_KEY[group.type]}" capability as available.`}
+              ? 'Set the SDL XDR URL in Configure (or grant your token SDL Dashboards + SDL Configuration Files) to enable dashboards. When multiple targets are selected, every target must support this.'
+              : `Not every selected target reported the "${CAP_KEY[group.type]}" capability as available.`}
           </p>
         </div>
       )}
@@ -462,7 +565,7 @@ function GroupSection({ group, capabilities, selected, onToggleItem, onToggleGro
   )
 }
 
-// ── Step 4: Deploy ───────────────────────────────────────────────────────────
+// ── Step 4: Deploy — results grouped per target ──────────────────────────────
 
 function ResultRow({ result }) {
   const item = ITEM_BY_ID[idFor(result.type, result.key)]
@@ -495,24 +598,65 @@ function ResultRow({ result }) {
   )
 }
 
-function DeployStepView({ deploying, deployPhase, deployError, deployResults }) {
-  if (deploying) return <LoadingBlock text={deployPhase || 'Deploying...'} />
-  if (deployError) return <ErrorBlock text={deployError} />
-  if (!deployResults) return <ErrorBlock text="No deploy results yet." />
+function TargetDeployCard({ target }) {
+  const results = target.results || []
+  const deployed = results.filter((r) => r.status === 'deployed').length
+  const skipped = results.filter((r) => r.status === 'skipped').length
+  const failed = results.filter((r) => r.status !== 'deployed' && r.status !== 'skipped').length
+  return (
+    <div className="rounded-xl border border-[#2d1b4e] overflow-hidden">
+      <div className="px-4 py-2.5 bg-[#1a0a2e] border-b border-[#2d1b4e] flex items-center gap-2 flex-wrap">
+        {target.loading
+          ? <Loader2 className="w-4 h-4 text-orange-400 animate-spin shrink-0" />
+          : target.error
+            ? <XCircle className="w-4 h-4 text-red-400 shrink-0" />
+            : <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />}
+        <span className="text-sm font-semibold text-slate-100 truncate">{target.label || hostOf(target.console_url)}</span>
+        <span className="text-[11px] font-mono text-slate-500 truncate">{hostOf(target.console_url)}</span>
+        {!target.loading && !target.error && (
+          <span className="text-[11px] text-slate-500 ml-auto">{deployed} deployed · {skipped} skipped · {failed} failed</span>
+        )}
+      </div>
+      {target.loading ? (
+        <div className="px-4 py-4 text-xs text-slate-400 flex items-center gap-2">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Deploying...
+        </div>
+      ) : target.error ? (
+        <div className="px-4 py-3 flex items-start gap-2">
+          <XCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+          <p className="text-xs text-red-400">{target.error}</p>
+        </div>
+      ) : (
+        <div>{results.map((r, i) => <ResultRow key={`${r.type}:${r.key}:${i}`} result={r} />)}</div>
+      )}
+    </div>
+  )
+}
 
-  const deployed = deployResults.filter((r) => r.status === 'deployed').length
-  const skipped = deployResults.filter((r) => r.status === 'skipped').length
-  const failed = deployResults.filter((r) => r.status !== 'deployed' && r.status !== 'skipped').length
+function DeployStepView({ deployPhase, targets }) {
+  if (!targets.length) return <ErrorBlock text="No deploy results yet." />
+  const anyLoading = targets.some((t) => t.loading)
+  const totals = targets.reduce((acc, t) => {
+    for (const r of t.results || []) {
+      if (r.status === 'deployed') acc.deployed++
+      else if (r.status === 'skipped') acc.skipped++
+      else acc.failed++
+    }
+    if (t.error) acc.targetErrors++
+    return acc
+  }, { deployed: 0, skipped: 0, failed: 0, targetErrors: 0 })
 
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-[#2d1b4e] bg-white/[0.02] px-3 py-2.5 text-xs text-slate-400 flex items-center gap-2.5">
         <Info className="w-3.5 h-3.5 text-orange-400 shrink-0" />
-        <span>{deployed} deployed · {skipped} skipped · {failed} failed</span>
+        <span>
+          {anyLoading
+            ? (deployPhase || 'Deploying...')
+            : `Across ${targets.length} target${targets.length === 1 ? '' : 's'}: ${totals.deployed} deployed · ${totals.skipped} skipped · ${totals.failed} failed${totals.targetErrors ? ` · ${totals.targetErrors} target error${totals.targetErrors === 1 ? '' : 's'}` : ''}`}
+        </span>
       </div>
-      <div className="rounded-xl border border-[#2d1b4e] overflow-hidden">
-        {deployResults.map((r, i) => <ResultRow key={`${r.type}:${r.key}:${i}`} result={r} />)}
-      </div>
+      {targets.map((t) => <TargetDeployCard key={t.connection_id} target={t} />)}
       <p className="text-xs text-slate-500 leading-relaxed">
         Deployed detections are enabled (Active) immediately. Hyperautomation workflows are imported and
         activated (Active + visible in your console). Dashboards are written to your SDL config store.
@@ -532,28 +676,29 @@ export default function DeployKnowledgeObjects() {
   // Configure
   const [configLoading, setConfigLoading] = useState(true)
   const [configError, setConfigError] = useState('')
-  const [config, setConfig] = useState(null)
-  const [editing, setEditing] = useState(false)
+  const [config, setConfig] = useState(null) // {configured, connections:[...], default_id}
+  const [targets, setTargets] = useState(() => new Set()) // connection ids chosen to deploy to
+  const [busyId, setBusyId] = useState(null) // a connection id undergoing set-default / remove
+  const [editingId, setEditingId] = useState(null) // null=closed | 'new' | <connection id>
+  const [labelInput, setLabelInput] = useState('')
   const [consoleUrlInput, setConsoleUrlInput] = useState('')
   const [apiTokenInput, setApiTokenInput] = useState('')
   const [sdlXdrUrlInput, setSdlXdrUrlInput] = useState('')
+  const [makeDefaultInput, setMakeDefaultInput] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [saving, setSaving] = useState(false)
-  const [disconnecting, setDisconnecting] = useState(false)
 
-  // Validate
+  // Validate — one entry per selected target
   const [validating, setValidating] = useState(false)
-  const [validateError, setValidateError] = useState('')
-  const [validateResult, setValidateResult] = useState(null)
+  const [validateResults, setValidateResults] = useState([])
 
   // Select
   const [selected, setSelected] = useState(() => new Set())
 
-  // Deploy
+  // Deploy — one entry per validated target
   const [deploying, setDeploying] = useState(false)
   const [deployPhase, setDeployPhase] = useState('')
-  const [deployError, setDeployError] = useState('')
-  const [deployResults, setDeployResults] = useState(null)
+  const [deployTargets, setDeployTargets] = useState([])
 
   useEffect(() => {
     if (!open) return
@@ -566,24 +711,32 @@ export default function DeployKnowledgeObjects() {
     if (!open) return
     setGate('none')
     setStep('configure')
-    setEditing(false)
     setConfig(null)
     setConfigError('')
-    setApiTokenInput('')
-    setSdlXdrUrlInput('')
-    setSaveError('')
-    setValidateResult(null)
-    setValidateError('')
+    setTargets(new Set())
+    setBusyId(null)
+    resetForm()
+    setValidateResults([])
+    setValidating(false)
     setSelected(new Set())
-    setDeployResults(null)
-    setDeployError('')
+    setDeployTargets([])
     initGate()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
+  function resetForm() {
+    setEditingId(null)
+    setLabelInput('')
+    setConsoleUrlInput('')
+    setApiTokenInput('')
+    setSdlXdrUrlInput('')
+    setMakeDefaultInput(false)
+    setSaveError('')
+  }
+
   // Gate on the caller's ACTUAL role up front (not by inferring from a stray 403):
   // logged-out → sign in; viewer → read-only; admin AND user → proceed. Deploy is
-  // NOT admin-only — any non-viewer can push to their own console.
+  // NOT admin-only — any non-viewer can push to their own console(s).
   async function initGate() {
     setConfigLoading(true)
     try {
@@ -595,6 +748,18 @@ export default function DeployKnowledgeObjects() {
       // fall through — fetchConfig will surface any reachability error
     }
     fetchConfig()
+  }
+
+  // Apply a fresh {configured, connections, default_id} config: keep any still-valid
+  // target selections, and default-select the default connection when nothing is picked.
+  function applyConfig(data) {
+    setConfig(data)
+    const ids = new Set((data.connections || []).map((c) => c.id))
+    setTargets((prev) => {
+      const next = new Set([...prev].filter((id) => ids.has(id)))
+      if (next.size === 0 && data.default_id && ids.has(data.default_id)) next.add(data.default_id)
+      return next
+    })
   }
 
   async function fetchConfig() {
@@ -609,14 +774,30 @@ export default function DeployKnowledgeObjects() {
         setConfigError(data.error || data.detail || `Failed to load configuration (HTTP ${res.status})`)
         return
       }
-      setConfig(data)
-      setConsoleUrlInput(data.console_url || '')
-      setSdlXdrUrlInput(data.sdl_xdr_url || '')
+      applyConfig(data)
+      // No connections yet → open the add form straight away.
+      if (!(data.connections || []).length) setEditingId('new')
+      else resetForm()
     } catch {
       setConfigError('Could not reach backend.')
     } finally {
       setConfigLoading(false)
     }
+  }
+
+  function openAdd() {
+    resetForm()
+    setEditingId('new')
+  }
+
+  function openEdit(conn) {
+    setEditingId(conn.id)
+    setLabelInput(conn.label || '')
+    setConsoleUrlInput(conn.console_url || '')
+    setApiTokenInput('')
+    setSdlXdrUrlInput(conn.sdl_xdr_url || '')
+    setMakeDefaultInput(false)
+    setSaveError('')
   }
 
   async function handleSaveConfig(e) {
@@ -625,16 +806,22 @@ export default function DeployKnowledgeObjects() {
     const url = consoleUrlInput.trim()
     if (!url) { setSaveError('Console URL is required.'); return }
     const token = apiTokenInput.trim()
-    const isEdit = !!config?.configured
-    if (!token && !(isEdit && config.has_token)) {
+    const isEdit = editingId && editingId !== 'new'
+    const editingConn = isEdit ? (config?.connections || []).find((c) => c.id === editingId) : null
+    if (!token && !(isEdit && editingConn?.has_token)) {
       setSaveError('API token is required.')
       return
     }
     setSaving(true)
     try {
-      const body = { console_url: url, api_token: token || (isEdit ? null : undefined) }
-      // SDL XDR URL is an optional region override; empty string clears it.
-      body.sdl_xdr_url = sdlXdrUrlInput.trim()
+      const body = {
+        console_url: url,
+        api_token: token || (isEdit ? null : undefined),
+        sdl_xdr_url: sdlXdrUrlInput.trim(), // '' clears the override
+        label: labelInput.trim() || null,
+      }
+      if (isEdit) body.id = editingId
+      if (makeDefaultInput) body.make_default = true
       const res = await fetch('/api/deploy/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -648,10 +835,14 @@ export default function DeployKnowledgeObjects() {
         setSaveError(describeHttpError(res.status, data, rawText, 'Save'))
         return
       }
-      setConfig(data)
-      setEditing(false)
-      setApiTokenInput('')
-        goToValidate()
+      // New connections auto-select as a target so the user can deploy immediately.
+      const before = new Set((config?.connections || []).map((c) => c.id))
+      applyConfig(data)
+      if (!isEdit) {
+        const added = (data.connections || []).find((c) => !before.has(c.id))
+        if (added) setTargets((prev) => new Set([...prev, added.id]))
+      }
+      resetForm()
     } catch {
       setSaveError('Could not reach backend.')
     } finally {
@@ -659,82 +850,92 @@ export default function DeployKnowledgeObjects() {
     }
   }
 
-  async function handleDisconnect() {
-    if (!window.confirm('Disconnect this SentinelOne console? You will need to re-enter the API token to deploy again.')) return
-    setDisconnecting(true)
+  async function handleSetDefault(id) {
+    setBusyId(id)
     try {
-      const res = await fetch('/api/deploy/config', { method: 'DELETE' })
+      const res = await fetch('/api/deploy/config/default', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
       if (res.status === 401) { setGate('signin'); return }
-      setConfig({ configured: false })
-      setConsoleUrlInput('')
-      setValidateResult(null)
-      setSelected(new Set())
-      setStep('configure')
-      setEditing(false)
+      const data = await res.json().catch(() => ({}))
+      if (res.ok) applyConfig(data)
     } catch {
-      // best-effort — form will reflect real state on next load
+      // best-effort — next load reflects real state
     } finally {
-      setDisconnecting(false)
+      setBusyId(null)
     }
   }
 
-  async function runValidate() {
-    setValidating(true)
-    setValidateError('')
+  async function handleRemoveConnection(id) {
+    const conn = (config?.connections || []).find((c) => c.id === id)
+    const name = conn?.label || hostOf(conn?.console_url) || 'this connection'
+    if (!window.confirm(`Remove ${name}? You will need to re-enter its API token to deploy to it again.`)) return
+    setBusyId(id)
     try {
-      const res = await fetch('/api/deploy/validate', { method: 'POST' })
+      const res = await fetch(`/api/deploy/config?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
       if (res.status === 401) { setGate('signin'); return }
-      const rawText = await res.text()
-      let data = {}
-      try { data = JSON.parse(rawText) } catch { /* non-JSON body */ }
-      if (!res.ok) {
-        setValidateError(describeHttpError(res.status, data, rawText, 'Validation'))
-        return
+      const data = await res.json().catch(() => ({}))
+      setTargets((prev) => { const next = new Set(prev); next.delete(id); return next })
+      if (res.ok && data.connections) {
+        applyConfig(data)
+        if (!(data.connections || []).length) setEditingId('new')
       }
-      setValidateResult(data)
     } catch {
-      setValidateError('Could not reach backend.')
+      // best-effort
     } finally {
-      setValidating(false)
+      setBusyId(null)
     }
   }
 
-  function goToValidate() {
-    setStep('validate')
-    runValidate()
+  function toggleTarget(id) {
+    setTargets((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   }
 
-  // "Select datasets" from the connected banner: validate silently (needed to know
-  // capabilities), then jump straight to Select on success — no separate step click.
-  async function goToSelectDatasets() {
+  // Validate every selected target in parallel, updating each card as it resolves.
+  async function runValidateTargets() {
+    const conns = (config?.connections || []).filter((c) => targets.has(c.id))
+    if (!conns.length) return
     setStep('validate')
     setValidating(true)
-    setValidateError('')
-    try {
-      const res = await fetch('/api/deploy/validate', { method: 'POST' })
-      if (res.status === 401) { setGate('signin'); return }
-      const rawText = await res.text()
-      let data = {}
-      try { data = JSON.parse(rawText) } catch { /* non-JSON body */ }
-      if (!res.ok) { setValidateError(describeHttpError(res.status, data, rawText, 'Validation')); return }
-      setValidateResult(data)
-      const caps = data?.capabilities || {}
-      const next = new Set()
-      for (const group of KNOWLEDGE_OBJECT_GROUPS) {
-        if (!caps[CAP_KEY[group.type]]) continue
-        for (const item of group.items) next.add(idFor(group.type, item.key))
+    setValidateResults(conns.map((c) => ({
+      connection_id: c.id, label: c.label, console_url: c.console_url,
+      loading: true, error: '', ok: false, capabilities: {}, site: {}, messages: [],
+    })))
+    await Promise.all(conns.map(async (c) => {
+      try {
+        const res = await fetch('/api/deploy/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ connection_id: c.id }),
+        })
+        if (res.status === 401) { setGate('signin'); return }
+        const rawText = await res.text()
+        let data = {}
+        try { data = JSON.parse(rawText) } catch { /* non-JSON body */ }
+        setValidateResults((prev) => prev.map((r) => r.connection_id !== c.id ? r : (
+          res.ok
+            ? { ...r, loading: false, ok: !!data.ok, site: data.site || {}, capabilities: data.capabilities || {}, messages: data.messages || [] }
+            : { ...r, loading: false, ok: false, error: describeHttpError(res.status, data, rawText, 'Validation') }
+        )))
+      } catch {
+        setValidateResults((prev) => prev.map((r) => r.connection_id !== c.id
+          ? r : { ...r, loading: false, ok: false, error: 'Could not reach backend.' }))
       }
-      setSelected(next)
-      setStep('select')
-    } catch {
-      setValidateError('Could not reach backend.')
-    } finally {
-      setValidating(false)
-    }
+    }))
+    setValidating(false)
   }
 
+  // Preselect every deployable item whose type is supported by ALL validated targets.
   function goToSelect() {
-    const caps = validateResult?.capabilities || {}
+    const okCaps = validateResults.filter((r) => r.ok).map((r) => r.capabilities)
+    const caps = intersectCaps(okCaps)
     const next = new Set()
     for (const group of KNOWLEDGE_OBJECT_GROUPS) {
       if (!caps[CAP_KEY[group.type]]) continue
@@ -791,31 +992,41 @@ export default function DeployKnowledgeObjects() {
     return objects
   }
 
+  // Fan out the deploy: one /api/deploy/run per validated target, in parallel.
   async function handleDeploy() {
+    const okTargets = validateResults.filter((r) => r.ok)
+    if (!okTargets.length) return
     setStep('deploy')
     setDeploying(true)
-    setDeployPhase('Preparing workflow definitions...')
-    setDeployResults(null)
-    setDeployError('')
+    setDeployPhase('Preparing definitions...')
+    setDeployTargets(okTargets.map((t) => ({
+      connection_id: t.connection_id, label: t.label, console_url: t.console_url,
+      loading: true, error: '', results: null,
+    })))
     try {
       const objects = await buildDeployObjects()
-      setDeployPhase(`Deploying ${objects.length} object${objects.length === 1 ? '' : 's'} to ${hostOf(validateResult?.console_url || config?.console_url) || 'your console'}...`)
-      const res = await fetch('/api/deploy/run', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ objects }),
-      })
-      if (res.status === 401) { setGate('signin'); return }
-      const rawText = await res.text()
-      let data = {}
-      try { data = JSON.parse(rawText) } catch { /* non-JSON body (edge / Access / proxy) */ }
-      if (!res.ok) {
-        setDeployError(describeHttpError(res.status, data, rawText, 'Deploy'))
-        return
-      }
-      setDeployResults(data.results || [])
-    } catch {
-      setDeployError('Could not reach the backend — check your connection and try again.')
+      setDeployPhase(`Deploying ${objects.length} object${objects.length === 1 ? '' : 's'} to ${okTargets.length} target${okTargets.length === 1 ? '' : 's'}...`)
+      await Promise.all(okTargets.map(async (t) => {
+        try {
+          const res = await fetch('/api/deploy/run', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ objects, connection_id: t.connection_id }),
+          })
+          if (res.status === 401) { setGate('signin'); return }
+          const rawText = await res.text()
+          let data = {}
+          try { data = JSON.parse(rawText) } catch { /* non-JSON body (edge / Access / proxy) */ }
+          setDeployTargets((prev) => prev.map((d) => d.connection_id !== t.connection_id ? d : (
+            res.ok
+              ? { ...d, loading: false, results: data.results || [], site: data.site }
+              : { ...d, loading: false, error: describeHttpError(res.status, data, rawText, 'Deploy') }
+          )))
+        } catch {
+          setDeployTargets((prev) => prev.map((d) => d.connection_id !== t.connection_id
+            ? d : { ...d, loading: false, error: 'Could not reach the backend — check your connection and try again.' }))
+        }
+      }))
     } finally {
       setDeploying(false)
       setDeployPhase('')
@@ -824,8 +1035,11 @@ export default function DeployKnowledgeObjects() {
 
   function requestClose() { setOpen(false) }
 
-  const configured = !!config?.configured
-  const showConfigForm = editing || !configured
+  const connections = config?.connections || []
+  const showConfigForm = editingId !== null
+  const editingConn = editingId && editingId !== 'new' ? connections.find((c) => c.id === editingId) : null
+  const okValidatedCount = validateResults.filter((r) => r.ok).length
+  const anyCapsAvailable = CAP_KEYS.some((k) => intersectCaps(validateResults.filter((r) => r.ok).map((r) => r.capabilities))[k])
 
   return (
     <>
@@ -837,7 +1051,7 @@ export default function DeployKnowledgeObjects() {
           <div className="min-w-0">
             <h2 className="text-sm font-bold text-slate-100">Add detections, workflows, and dashboards to console</h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              Deploy the lab's knowledge objects to your own SentinelOne site.
+              Deploy the lab's SentinelOne assets to one or more of your own consoles.
             </p>
           </div>
         </div>
@@ -859,7 +1073,7 @@ export default function DeployKnowledgeObjects() {
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-[#2d1b4e]">
               <h3 id="deploy-wizard-title" className="text-sm font-semibold text-slate-100 flex items-center gap-2">
-                <Rocket className="w-4 h-4 text-orange-400" /> Deploy knowledge objects
+                <Rocket className="w-4 h-4 text-orange-400" /> Deploy SentinelOne assets
               </h3>
               <button
                 onClick={requestClose}
@@ -880,28 +1094,33 @@ export default function DeployKnowledgeObjects() {
                 configError ? <ErrorBlock text={configError} onRetry={fetchConfig} /> :
                 showConfigForm ? (
                   <ConfigForm
-                    isEdit={configured}
-                    hasStoredToken={!!config?.has_token}
+                    isEdit={!!editingConn}
+                    hasStoredToken={!!editingConn?.has_token}
+                    label={labelInput} setLabel={setLabelInput}
                     consoleUrl={consoleUrlInput} setConsoleUrl={setConsoleUrlInput}
                     apiToken={apiTokenInput} setApiToken={setApiTokenInput}
                     sdlXdrUrl={sdlXdrUrlInput} setSdlXdrUrl={setSdlXdrUrlInput}
+                    makeDefault={makeDefaultInput} setMakeDefault={setMakeDefaultInput}
+                    showMakeDefault={connections.length > 0}
                     saveError={saveError}
                     onSubmit={handleSaveConfig}
                   />
                 ) : (
-                  <ConnectedBanner
-                    config={config}
-                    onSelectDatasets={goToSelectDatasets}
-                    onRevalidate={goToValidate}
-                    onEdit={() => setEditing(true)}
-                    onDisconnect={handleDisconnect}
-                    disconnecting={disconnecting}
+                  <ConnectionsManager
+                    connections={connections}
+                    targets={targets}
+                    busyId={busyId}
+                    onToggleTarget={toggleTarget}
+                    onSetDefault={handleSetDefault}
+                    onEdit={openEdit}
+                    onRemove={handleRemoveConnection}
+                    onAdd={openAdd}
                   />
                 )
               )}
 
               {gate === 'none' && step === 'validate' && (
-                <ValidateStepView validating={validating} validateError={validateError} validateResult={validateResult} />
+                <ValidateStepView validating={validating} results={validateResults} />
               )}
 
               {gate === 'none' && step === 'select' && (
@@ -909,15 +1128,15 @@ export default function DeployKnowledgeObjects() {
                   <div className="rounded-lg border border-[#2d1b4e] bg-white/[0.02] px-3 py-2.5 text-xs text-slate-400 flex items-start gap-2.5">
                     <Info className="w-3.5 h-3.5 text-orange-400 shrink-0 mt-0.5" />
                     <span>
-                      Deployed detections are enabled (Active) immediately, and Hyperautomation workflows are
-                      imported and activated (Active + visible in your console).
+                      Selected assets deploy to all {okValidatedCount} validated target{okValidatedCount === 1 ? '' : 's'}. Detections are
+                      enabled (Active) immediately, and Hyperautomation workflows are imported and activated.
                     </span>
                   </div>
                   {KNOWLEDGE_OBJECT_GROUPS.map((group) => (
                     <GroupSection
                       key={group.type}
                       group={group}
-                      capabilities={validateResult?.capabilities}
+                      capabilities={intersectCaps(validateResults.filter((r) => r.ok).map((r) => r.capabilities))}
                       selected={selected}
                       onToggleItem={handleToggleItem}
                       onToggleGroup={handleToggleGroup}
@@ -927,12 +1146,7 @@ export default function DeployKnowledgeObjects() {
               )}
 
               {gate === 'none' && step === 'deploy' && (
-                <DeployStepView
-                  deploying={deploying}
-                  deployPhase={deployPhase}
-                  deployError={deployError}
-                  deployResults={deployResults}
-                />
+                <DeployStepView deployPhase={deployPhase} targets={deployTargets} />
               )}
             </div>
 
@@ -943,8 +1157,8 @@ export default function DeployKnowledgeObjects() {
 
               {gate === 'none' && step === 'configure' && showConfigForm && (
                 <>
-                  {configured && (
-                    <button type="button" onClick={() => { setEditing(false); setSaveError('') }} className="btn-ghost text-xs">
+                  {connections.length > 0 && (
+                    <button type="button" onClick={resetForm} className="btn-ghost text-xs">
                       Cancel
                     </button>
                   )}
@@ -955,21 +1169,31 @@ export default function DeployKnowledgeObjects() {
                     className="btn-primary text-xs ml-auto disabled:opacity-40"
                   >
                     {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                    {saving ? 'Saving...' : 'Save & Continue'}
+                    {saving ? 'Saving...' : editingConn ? 'Save changes' : 'Add connection'}
                   </button>
                 </>
+              )}
+
+              {gate === 'none' && step === 'configure' && !showConfigForm && (
+                <button
+                  onClick={runValidateTargets}
+                  disabled={targets.size === 0}
+                  className="btn-primary text-xs ml-auto disabled:opacity-40"
+                >
+                  <ServerCog className="w-3.5 h-3.5" /> Validate {targets.size} target{targets.size === 1 ? '' : 's'}
+                </button>
               )}
 
               {gate === 'none' && step === 'validate' && (
                 <>
                   <button onClick={() => setStep('configure')} className="btn-ghost text-xs">Back</button>
                   <div className="flex items-center gap-2 ml-auto">
-                    <button onClick={runValidate} disabled={validating} className="btn-ghost text-xs disabled:opacity-40">
+                    <button onClick={runValidateTargets} disabled={validating} className="btn-ghost text-xs disabled:opacity-40">
                       <RefreshCw className={`w-3.5 h-3.5 ${validating ? 'animate-spin' : ''}`} /> Retry
                     </button>
                     <button
                       onClick={goToSelect}
-                      disabled={!validateResult?.ok}
+                      disabled={validating || okValidatedCount === 0 || !anyCapsAvailable}
                       className="btn-primary text-xs disabled:opacity-40"
                     >
                       Continue to Select
@@ -986,7 +1210,7 @@ export default function DeployKnowledgeObjects() {
                     disabled={selected.size === 0}
                     className="btn-primary text-xs ml-auto disabled:opacity-40"
                   >
-                    <Rocket className="w-3.5 h-3.5" /> Deploy {selected.size} object{selected.size === 1 ? '' : 's'}
+                    <Rocket className="w-3.5 h-3.5" /> Deploy {selected.size} object{selected.size === 1 ? '' : 's'} to {okValidatedCount} target{okValidatedCount === 1 ? '' : 's'}
                   </button>
                 </>
               )}
@@ -998,7 +1222,7 @@ export default function DeployKnowledgeObjects() {
                   </span>
                 ) : (
                   <>
-                    <button onClick={() => { setStep('select'); setDeployResults(null); setDeployError('') }} className="btn-ghost text-xs">
+                    <button onClick={() => { setStep('select'); setDeployTargets([]) }} className="btn-ghost text-xs">
                       Deploy more
                     </button>
                     <button onClick={requestClose} className="btn-primary text-xs ml-auto">Done</button>

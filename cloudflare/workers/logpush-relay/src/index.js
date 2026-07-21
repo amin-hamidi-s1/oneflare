@@ -306,21 +306,63 @@ async function decryptField(env, field) {
   }
 }
 
-// Redacted view of an S1 deploy-config row — safe to return to a browser session.
-// Never includes any token or key material.
-function s1cfgRedacted(row) {
-  if (!row) {
-    return { configured: false, console_url: null, has_token: false, sdl_xdr_url: null, updated_at: null };
+// Host portion of a console URL — used as a connection's default label.
+function s1cfgHost(url) {
+  try { return new URL(url).host; } catch { return String(url || "").replace(/^https?:\/\//i, "").split("/")[0]; }
+}
+
+// Normalize a stored row into the multi-connection shape:
+//   { connections: [ { id, label, console_url, api_token, sdl_xdr_url, sdl_write_key, updated_at } ], default_id }
+// Legacy rows are a single flat config (console_url at the top level) — wrap them
+// into a one-element list so old users keep their console with zero data loss.
+// Read-through migration: every handler that reads the row calls this first.
+function s1cfgMigrate(row) {
+  if (!row || typeof row !== "object") return { connections: [], default_id: null };
+  if (Array.isArray(row.connections)) {
+    return { connections: row.connections, default_id: row.default_id || (row.connections[0] || {}).id || null };
   }
+  if (row.console_url) {
+    const id = crypto.randomUUID();
+    return {
+      connections: [{
+        id,
+        label: s1cfgHost(row.console_url),
+        console_url: row.console_url,
+        api_token: row.api_token || null,
+        sdl_xdr_url: row.sdl_xdr_url || null,
+        sdl_write_key: row.sdl_write_key || null,
+        updated_at: row.updated_at || null,
+      }],
+      default_id: id,
+    };
+  }
+  return { connections: [], default_id: null };
+}
+
+// Redacted view of a single connection — never includes token/key material.
+function s1cfgConnRedacted(conn, defaultId) {
   return {
-    configured: true,
-    console_url: row.console_url || null,
-    has_token: !!row.api_token,
+    id: conn.id,
+    label: conn.label || s1cfgHost(conn.console_url),
+    console_url: conn.console_url || null,
+    has_token: !!conn.api_token,
     // The console/service-user token itself does SDL config ops, so no separate SDL
     // key is stored — sdl_xdr_url is only an optional region override (non-secret),
     // returned so the form can prefill it.
-    sdl_xdr_url: row.sdl_xdr_url || null,
-    updated_at: row.updated_at || null,
+    sdl_xdr_url: conn.sdl_xdr_url || null,
+    updated_at: conn.updated_at || null,
+    is_default: conn.id === defaultId,
+  };
+}
+
+// Redacted view of a whole S1 deploy-config row — safe to return to a browser
+// session. Emits the full list of connections; never any secret material.
+function s1cfgRedacted(row) {
+  const { connections, default_id } = s1cfgMigrate(row);
+  return {
+    configured: connections.length > 0,
+    connections: connections.map((c) => s1cfgConnRedacted(c, default_id)),
+    default_id: default_id || null,
   };
 }
 
@@ -1596,9 +1638,27 @@ async function handleAuthTenants(request, env) {
 // the ADMIN_TOKEN break-glass route (/auth/s1/config-raw), which the backend
 // calls server-side so the browser never sees the token.
 
-// POST /auth/s1/config — upsert the caller's S1 deploy config (any non-viewer
-// session). Preserves an existing api_token / sdl_write_key when the field is
-// omitted (null) so a user can add SDL creds later without re-entering the token.
+// Persist a migrated {connections, default_id} row (or delete the key when the
+// connection list is empty). Keeps owner_email for the break-glass raw route.
+async function s1cfgSave(env, email, state) {
+  const key = S1CFG_PREFIX + normEmail(email);
+  if (!state.connections.length) {
+    await env.REGISTRY.delete(key);
+    return;
+  }
+  await env.REGISTRY.put(key, JSON.stringify({
+    owner_email: normEmail(email),
+    connections: state.connections,
+    default_id: state.default_id,
+  }));
+}
+
+// POST /auth/s1/config — add or update one of the caller's S1 connections (any
+// non-viewer session). Body: { id?, label?, console_url, api_token?, sdl_xdr_url?,
+// sdl_write_key?, make_default? }. With a matching `id` the connection is updated
+// in place (an omitted api_token / sdl_write_key keeps the stored secret so a user
+// can rename or re-region without re-entering the token); otherwise a new
+// connection is appended. The first connection is auto-default.
 async function handleS1ConfigPost(request, env) {
   if (request.method !== "POST") return json({ error: "method not allowed" }, 405);
   const session = await currentSession(request, env);
@@ -1619,10 +1679,13 @@ async function handleS1ConfigPost(request, env) {
 
   const key = S1CFG_PREFIX + normEmail(session.email);
   const existingRaw = await env.REGISTRY.get(key);
-  const existing = existingRaw ? JSON.parse(existingRaw) : null;
+  const state = s1cfgMigrate(existingRaw ? JSON.parse(existingRaw) : null);
+
+  const wantId = body && body.id ? String(body.id) : "";
+  const existing = wantId ? state.connections.find((c) => c.id === wantId) : null;
 
   // api_token: use the new value if a non-empty one is supplied; else keep the
-  // stored one. A config with no token at all is rejected.
+  // stored one (only possible when editing). A connection with no token is rejected.
   const apiTokenIn = body && body.api_token != null ? String(body.api_token).trim() : "";
   let apiTokenField = existing ? existing.api_token : null;
   if (apiTokenIn) apiTokenField = await encryptField(env, apiTokenIn);
@@ -1641,20 +1704,33 @@ async function handleS1ConfigPost(request, env) {
     sdlWriteField = v ? await encryptField(env, v) : null;
   }
 
-  const row = {
-    owner_email: normEmail(session.email),
+  const label = body && body.label != null && String(body.label).trim()
+    ? String(body.label).trim().slice(0, 120)
+    : (existing ? existing.label : s1cfgHost(console_url));
+
+  const conn = {
+    id: existing ? existing.id : crypto.randomUUID(),
+    label,
     console_url,
     api_token: apiTokenField,
     sdl_xdr_url: sdlXdrUrl,
     sdl_write_key: sdlWriteField,
     updated_at: new Date().toISOString(),
   };
-  await env.REGISTRY.put(key, JSON.stringify(row));
+  if (existing) {
+    state.connections = state.connections.map((c) => (c.id === conn.id ? conn : c));
+  } else {
+    state.connections.push(conn);
+  }
+  // First connection, or an explicit make_default, becomes the default.
+  if (!state.default_id || (body && body.make_default)) state.default_id = conn.id;
+
+  await s1cfgSave(env, session.email, state);
   await appendHistory(env, { type: "s1cfg_saved", owner: session.email });
-  return json(s1cfgRedacted(row));
+  return json(s1cfgRedacted({ connections: state.connections, default_id: state.default_id }));
 }
 
-// GET /auth/s1/config — redacted status of the caller's own config.
+// GET /auth/s1/config — redacted list of the caller's own connections.
 async function handleS1ConfigGet(request, env) {
   const session = await currentSession(request, env);
   if (!session) return json({ error: "not authenticated" }, 401);
@@ -1662,20 +1738,51 @@ async function handleS1ConfigGet(request, env) {
   return json(s1cfgRedacted(raw ? JSON.parse(raw) : null));
 }
 
-// DELETE /auth/s1/config — clear the caller's own config.
+// POST /auth/s1/config/default — mark one of the caller's connections as default.
+async function handleS1ConfigDefault(request, env) {
+  const session = await currentSession(request, env);
+  if (!session) return json({ error: "not authenticated" }, 401);
+  if (session.role === "viewer") return json({ error: "viewers cannot configure deployment" }, 403);
+  let body;
+  try { body = await request.json(); } catch { return json({ error: "invalid JSON body" }, 400); }
+  const id = body && body.id ? String(body.id) : "";
+  const raw = await env.REGISTRY.get(S1CFG_PREFIX + normEmail(session.email));
+  const state = s1cfgMigrate(raw ? JSON.parse(raw) : null);
+  if (!state.connections.some((c) => c.id === id)) {
+    return json({ error: "connection id not found" }, 404);
+  }
+  state.default_id = id;
+  await s1cfgSave(env, session.email, state);
+  return json(s1cfgRedacted({ connections: state.connections, default_id: state.default_id }));
+}
+
+// DELETE /auth/s1/config[?id=<id>] — remove one connection, or (no id) clear all.
+// Removing the default connection promotes the first remaining one.
 async function handleS1ConfigDelete(request, env) {
   const session = await currentSession(request, env);
   if (!session) return json({ error: "not authenticated" }, 401);
   if (session.role === "viewer") return json({ error: "viewers cannot configure deployment" }, 403);
-  await env.REGISTRY.delete(S1CFG_PREFIX + normEmail(session.email));
+  const id = new URL(request.url).searchParams.get("id");
+  const key = S1CFG_PREFIX + normEmail(session.email);
+  if (!id) {
+    await env.REGISTRY.delete(key);
+    await appendHistory(env, { type: "s1cfg_deleted", owner: session.email });
+    return json({ ok: true, deleted: true });
+  }
+  const raw = await env.REGISTRY.get(key);
+  const state = s1cfgMigrate(raw ? JSON.parse(raw) : null);
+  state.connections = state.connections.filter((c) => c.id !== id);
+  if (state.default_id === id) state.default_id = (state.connections[0] || {}).id || null;
+  await s1cfgSave(env, session.email, state);
   await appendHistory(env, { type: "s1cfg_deleted", owner: session.email });
-  return json({ ok: true, deleted: true });
+  return json(s1cfgRedacted({ connections: state.connections, default_id: state.default_id }));
 }
 
-// GET /auth/s1/config-raw?email=<e> — ADMIN_TOKEN break-glass ONLY. Returns the
-// DECRYPTED creds so the backend can call S1 on the user's behalf. This is the
-// ONLY route that emits the raw token, and it is gated purely on the console's
-// server-side ADMIN_TOKEN (no session path) — a browser can never reach it.
+// GET /auth/s1/config-raw?email=<e>[&id=<id>] — ADMIN_TOKEN break-glass ONLY.
+// Returns the DECRYPTED creds for the requested connection (or the default) so the
+// backend can call S1 on the user's behalf. This is the ONLY route that emits the
+// raw token, and it is gated purely on the console's server-side ADMIN_TOKEN (no
+// session path) — a browser can never reach it.
 async function handleS1ConfigRaw(request, env) {
   if (!checkAdminToken(request, env)) return json({ error: "unauthorized" }, 401);
   const url = new URL(request.url);
@@ -1683,15 +1790,22 @@ async function handleS1ConfigRaw(request, env) {
   if (!email) return json({ error: "email query param is required" }, 400);
   const raw = await env.REGISTRY.get(S1CFG_PREFIX + email);
   if (!raw) return json({ configured: false }, 404);
-  const row = JSON.parse(raw);
+  const state = s1cfgMigrate(JSON.parse(raw));
+  const wantId = url.searchParams.get("id");
+  const conn = (wantId && state.connections.find((c) => c.id === wantId))
+    || state.connections.find((c) => c.id === state.default_id)
+    || state.connections[0];
+  if (!conn) return json({ configured: false }, 404);
   return json({
     configured: true,
-    owner_email: row.owner_email || email,
-    console_url: row.console_url || null,
-    api_token: await decryptField(env, row.api_token),
-    sdl_xdr_url: row.sdl_xdr_url || null,
-    sdl_write_key: await decryptField(env, row.sdl_write_key),
-    updated_at: row.updated_at || null,
+    owner_email: email,
+    connection_id: conn.id,
+    label: conn.label || s1cfgHost(conn.console_url),
+    console_url: conn.console_url || null,
+    api_token: await decryptField(env, conn.api_token),
+    sdl_xdr_url: conn.sdl_xdr_url || null,
+    sdl_write_key: await decryptField(env, conn.sdl_write_key),
+    updated_at: conn.updated_at || null,
   });
 }
 
@@ -1748,6 +1862,7 @@ export default {
     if (path === "/auth/s1/config" && request.method === "POST") return handleS1ConfigPost(request, env);
     if (path === "/auth/s1/config" && request.method === "GET") return handleS1ConfigGet(request, env);
     if (path === "/auth/s1/config" && request.method === "DELETE") return handleS1ConfigDelete(request, env);
+    if (path === "/auth/s1/config/default" && request.method === "POST") return handleS1ConfigDefault(request, env);
     if (path === "/auth/s1/config-raw" && request.method === "GET") return handleS1ConfigRaw(request, env);
 
     const userRoleMatch = path.match(/^\/auth\/users\/([^/]+)\/role$/);
