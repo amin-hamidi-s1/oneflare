@@ -80,12 +80,6 @@
               "is_secret": false
             },
             {
-              "name": "src_ip",
-              "value": "{{Function.DEFAULT(local_var.demo_override, local_var.real_ip)}}",
-              "should_use_as_output": false,
-              "is_secret": false
-            },
-            {
               "name": "channel_id",
               "value": "C0BJH0YCYS1",
               "should_use_as_output": false,
@@ -209,6 +203,12 @@
           "name": "Extract Enrichment",
           "action_type": "variable",
           "variables": [
+            {
+              "name": "src_ip",
+              "value": "{{Function.DEFAULT(local_var.demo_override, local_var.real_ip)}}",
+              "should_use_as_output": false,
+              "is_secret": false
+            },
             {
               "name": "attack_requests",
               "value": "{{Function.DEFAULT(Function.JQ(create-power-query.body.data.data, \"(.[0] // [])[1] | values | floor\", true), \"N/A\")}}",

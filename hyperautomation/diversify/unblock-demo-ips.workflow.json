@@ -1,0 +1,150 @@
+{
+  "name": "unblock-demo-ips",
+  "description": "LIST current block rules so you can find + delete them (see description for the delete step).",
+  "actions": [
+    {
+      "action": {
+        "type": "manual_trigger",
+        "tag": "core_action",
+        "connection_id": null,
+        "connection_name": "",
+        "use_connection_name": false,
+        "integration_id": null,
+        "data": {
+          "name": "Manual Trigger",
+          "action_type": "manual_trigger"
+        },
+        "state": "active",
+        "description": "Run manually to test this diversified Cloudflare response in isolation.",
+        "client_data": {
+          "position": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "dimensions": {
+            "width": 256.0,
+            "height": 100.0
+          },
+          "collapsed": false
+        },
+        "snippet_workflow_id": null,
+        "snippet_version_id": null
+      },
+      "export_id": 0,
+      "connected_to": [
+        {
+          "target": 1,
+          "custom_handle": null,
+          "payload": null
+        }
+      ],
+      "parent_action": null
+    },
+    {
+      "action": {
+        "type": "variable",
+        "tag": "core_action",
+        "connection_id": null,
+        "connection_name": null,
+        "use_connection_name": false,
+        "integration_id": null,
+        "data": {
+          "name": "Set Context",
+          "action_type": "variable",
+          "variables": [
+            {
+              "name": "note",
+              "value": "After listing, DELETE /client/v4/user/firewall/access_rules/rules/{id} per rule. HA loop over the 7 demo IPs; or filter result[] by configuration.value. See DIVERSIFY-HANDOFF.md.",
+              "should_use_as_output": false,
+              "is_secret": false
+            }
+          ]
+        },
+        "state": "active",
+        "description": "Demo target values — edit these to test.",
+        "client_data": {
+          "position": {
+            "x": 0.0,
+            "y": 177.0
+          },
+          "dimensions": {
+            "width": 256.0,
+            "height": 76.0
+          },
+          "collapsed": false
+        },
+        "snippet_workflow_id": null,
+        "snippet_version_id": null
+      },
+      "export_id": 1,
+      "connected_to": [
+        {
+          "target": 2,
+          "custom_handle": null,
+          "payload": null
+        }
+      ],
+      "parent_action": 0
+    },
+    {
+      "action": {
+        "type": "http_request",
+        "tag": "integration",
+        "connection_id": "f1d111b8-d0c0-4ea7-8ae7-2891c16e9592",
+        "connection_name": "",
+        "use_connection_name": false,
+        "integration_id": "0dedd07c-0b9a-4205-9215-03ab1a95eb3a",
+        "data": {
+          "name": "List IP Access Rules",
+          "action_type": "http_request",
+          "public_action_id": null,
+          "method": "get",
+          "url": "{{Connection.protocol}}{{Connection.url}}/client/v4/user/firewall/access_rules/rules?mode=block&per_page=100",
+          "url_path": "/client/v4/user/firewall/access_rules/rules?mode=block&per_page=100",
+          "url_prefix": null,
+          "payload": "",
+          "parameters": [],
+          "retry_on_status_code": null,
+          "retry_on_status_codes": [
+            500
+          ],
+          "retry_config": null,
+          "ssl_verification": true,
+          "timeout": 30,
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "use_authentication_data": true,
+          "use_proxy": false,
+          "proxy_user": null,
+          "proxy_password": null,
+          "proxy_host": null,
+          "proxy_port": null,
+          "redirect_follow": true,
+          "continue_on_fail": false,
+          "continue_on_fail_status_codes": [],
+          "body_type": null
+        },
+        "state": "active",
+        "description": "GET all block rules. Follow with a loop: extract result[].id where configuration.value in demo IPs -> DELETE each.",
+        "client_data": {
+          "position": {
+            "x": -260.0,
+            "y": 1770.0
+          },
+          "dimensions": {
+            "width": 256.0,
+            "height": 76.0
+          },
+          "collapsed": false
+        },
+        "snippet_workflow_id": null,
+        "snippet_version_id": null
+      },
+      "export_id": 2,
+      "connected_to": [],
+      "parent_action": 1
+    }
+  ],
+  "notes": []
+}
