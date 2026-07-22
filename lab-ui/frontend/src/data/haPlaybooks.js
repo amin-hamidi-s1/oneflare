@@ -9,6 +9,7 @@ const WORKFLOW_LOADERS = {
   'prompt-injection': () => import('./ha-workflows/prompt-injection.workflow.json'),
   'dns-tunneling': () => import('./ha-workflows/dns-tunneling.workflow.json'),
   'ctf-campaign': () => import('./ha-workflows/ctf-campaign.workflow.json'),
+  'reset-demo': () => import('./ha-workflows/reset-demo.workflow.json'),
 }
 
 export async function loadHaWorkflowJson(workflowKey) {
