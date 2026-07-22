@@ -68,8 +68,20 @@
           "action_type": "variable",
           "variables": [
             {
-              "name": "src_ip",
+              "name": "demo_override",
               "value": "104.244.73.29",
+              "should_use_as_output": false,
+              "is_secret": false
+            },
+            {
+              "name": "real_ip",
+              "value": "{{Function.DEFAULT(singularity-response-trigger.data.asset.name, \"0.0.0.0\")}}",
+              "should_use_as_output": false,
+              "is_secret": false
+            },
+            {
+              "name": "src_ip",
+              "value": "{{Function.DEFAULT(local_var.demo_override, local_var.real_ip)}}",
               "should_use_as_output": false,
               "is_secret": false
             },
@@ -82,12 +94,6 @@
             {
               "name": "pq_query",
               "value": "class_uid=4002 dataSource.cloudflare_dataset='HTTP Requests' | let src_ip = src_endpoint.ip | filter src_ip = '{{singularity-response-trigger.data.asset.name}}' | group hits=count(), distinct_uas=estimate_distinct(http_request.user_agent), ja3=any(tls.ja3_hash.value), distinct_ja3=estimate_distinct(tls.ja3_hash.value), distinct_paths=estimate_distinct(http_request.url.path), recon_hits=count(http_request.url.path in ('/.env','/.git/HEAD','/api/v1/admin','/api/v1/training-data','/actuator/env')), injection_hits=count(http_request.url.url_string matches '(?i)(ignore previous instructions|do anything now|jailbreak|jndi:|169.254.169.254|etc/passwd|ognl)') by src_ip | sort -hits | limit 1 | columns src_ip, hits, distinct_uas, ja3, distinct_ja3, distinct_paths, recon_hits, injection_hits",
-              "should_use_as_output": false,
-              "is_secret": false
-            },
-            {
-              "name": "real_ip",
-              "value": "{{Function.DEFAULT(singularity-response-trigger.data.asset.name, \"0.0.0.0\")}}",
               "should_use_as_output": false,
               "is_secret": false
             }
@@ -802,7 +808,7 @@
           "url": "{{Connection.protocol}}{{Connection.url}}/web/api/v2.1/unifiedalerts/graphql",
           "url_path": "/web/api/v2.1/unifiedalerts/graphql",
           "url_prefix": null,
-          "payload": "{\"query\": \"mutation AddNoteToAlert($id: String!, $text: String!, $plain: String!) { alertTriggerActions(actions: [{id: \\\"S1/alert/addNote\\\", payload: {formattedNote: {text: $text, plainText: $plain, type: MARKDOWN}}}] filter: {or: [{and: [{fieldId: \\\"id\\\", stringEqual: {value: $id}}]}]}) { ... on ActionsTriggered { actions { actionId success { id } failure { id } skip { id } } } } }\", \"variables\": {\"id\": \"{{singularity-response-trigger.data.id}}\", \"text\": \"### ✅ Automated Response Approved\\n\\n**Analyst:** {{wait-for-slack.body.user.username}} — approved via Slack  \\n**Alert:** Multi-vector 'DropDay' campaign (recon + bot + injection) — source `{{local_var.src_ip}}` → shop.soledrop.co\\n\\n| Field | Value |\\n|---|---|\\n| Source IP | `{{local_var.src_ip}}` |\\n| Total hits | **{{local_var.hits}}** |\\n| Recon / Injection | {{local_var.recon_hits}} / {{local_var.injection_hits}} |\\n| Distinct JA3 | {{local_var.distinct_ja3}} |\\n| Distinct paths | {{local_var.distinct_paths}} |\\n| VirusTotal | {{virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious}} malicious ([VirusTotal](https://www.virustotal.com/gui/ip-address/{{local_var.src_ip}})) |\\n| AbuseIPDB | {{abuseipdb-check-ip.body.data.abuseConfidenceScore}}% ([AbuseIPDB](https://www.abuseipdb.com/check/{{local_var.src_ip}})) |\\n\\n**Action taken:** source IP `{{local_var.src_ip}}` blocked at Cloudflare.  \\n**Verdict:** True Positive — Malware · **Status:** In Progress\\n\\n**Recommended next actions:** Pivot on JA3 `{{local_var.ja3}}` and block the fingerprint/ASN, not one IP; correlate with the per-box detections and open an incident.\", \"plain\": \"Alert approved by {{wait-for-slack.body.user.username}}; source {{local_var.src_ip}} blocked at Cloudflare.\"}}",
+          "payload": "{\"query\": \"mutation AddNoteToAlert($id: String!, $text: String!, $plain: String!) { alertTriggerActions(actions: [{id: \\\"S1/alert/addNote\\\", payload: {formattedNote: {text: $text, plainText: $plain, type: MARKDOWN}}}] filter: {or: [{and: [{fieldId: \\\"id\\\", stringEqual: {value: $id}}]}]}) { ... on ActionsTriggered { actions { actionId success { id } failure { id } skip { id } } } } }\", \"variables\": {\"id\": \"{{singularity-response-trigger.data.id}}\", \"text\": \"### ✅ Automated Response Approved\\n\\n**Analyst:** {{wait-for-slack.body.user.username}} — approved via Slack  \\n**Alert:** Multi-vector 'DropDay' campaign (recon + bot + injection) — source `{{local_var.src_ip}}` → shop.soledrop.co\\n\\n| Field | Value |\\n|---|---|\\n| Source IP | `{{local_var.src_ip}}` |\\n| Total hits | **{{local_var.hits}}** |\\n| Recon / Injection | {{local_var.recon_hits}} / {{local_var.injection_hits}} |\\n| Distinct JA3 | {{local_var.distinct_ja3}} |\\n| Distinct paths | {{local_var.distinct_paths}} |\\n| VirusTotal | {{virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious}} malicious ([VirusTotal](https://www.virustotal.com/gui/ip-address/{{local_var.src_ip}})) |\\n| AbuseIPDB | {{abuseipdb-check-ip.body.data.abuseConfidenceScore}}% ([AbuseIPDB](https://www.abuseipdb.com/check/{{local_var.src_ip}})) |\\n\\n**Action taken:** source IP `{{local_var.src_ip}}` blocked at Cloudflare.  \\n**Verdict:** True Positive — Malware · **Status:** In Progress\\n\\n**Recommended next actions:** Pivot on JA3 `{{local_var.ja3}}` and block the fingerprint/ASN, not one IP; correlate with the per-box detections and open an incident.\\n\\n**🔎 Investigate — copy into Event Search (PowerQuery, adjust the time range to the alert window):**\\n\\n```\\nclass_uid=4002 dataSource.cloudflare_dataset='HTTP Requests' | filter src_endpoint.ip = '{{local_var.real_ip}}' | columns timestamp, http_request.url.path, tls.ja3_hash.value, http_request.user_agent | sort -timestamp | limit 200\\n```\", \"plain\": \"Alert approved by {{wait-for-slack.body.user.username}}; source {{local_var.src_ip}} blocked at Cloudflare.\"}}",
           "parameters": [],
           "retry_on_status_code": null,
           "retry_on_status_codes": [
@@ -867,7 +873,7 @@
           "url": "{{Connection.protocol}}{{Connection.url}}/web/api/v2.1/unifiedalerts/graphql",
           "url_path": "/web/api/v2.1/unifiedalerts/graphql",
           "url_prefix": null,
-          "payload": "{\"query\": \"mutation AddNoteToAlert($id: String!, $text: String!, $plain: String!) { alertTriggerActions(actions: [{id: \\\"S1/alert/addNote\\\", payload: {formattedNote: {text: $text, plainText: $plain, type: MARKDOWN}}}] filter: {or: [{and: [{fieldId: \\\"id\\\", stringEqual: {value: $id}}]}]}) { ... on ActionsTriggered { actions { actionId success { id } failure { id } skip { id } } } } }\", \"variables\": {\"id\": \"{{singularity-response-trigger.data.id}}\", \"text\": \"### 🚫 Dismissed — False Positive\\n\\n**Analyst:** {{wait-for-slack.body.user.username}} — dismissed via Slack  \\n**Alert:** Multi-vector 'DropDay' campaign (recon + bot + injection) — source `{{local_var.src_ip}}` → shop.soledrop.co\\n\\n| Field | Value |\\n|---|---|\\n| Source IP | `{{local_var.src_ip}}` |\\n| Total hits | **{{local_var.hits}}** |\\n| Recon / Injection | {{local_var.recon_hits}} / {{local_var.injection_hits}} |\\n| Distinct JA3 | {{local_var.distinct_ja3}} |\\n| Distinct paths | {{local_var.distinct_paths}} |\\n| VirusTotal | {{virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious}} malicious ([VirusTotal](https://www.virustotal.com/gui/ip-address/{{local_var.src_ip}})) |\\n| AbuseIPDB | {{abuseipdb-check-ip.body.data.abuseConfidenceScore}}% ([AbuseIPDB](https://www.abuseipdb.com/check/{{local_var.src_ip}})) |\\n\\n**No Cloudflare block was applied.**  \\n**Rationale:** Multi-signal pattern matches an authorized red-team / CTF exercise window or a scanner.  \\n**Verdict:** False Positive — Benign\\n\\n**Recommended next actions:** No block. Tag as authorized-testing and suppress the campaign correlation for the window.\", \"plain\": \"Alert dismissed as false positive by {{wait-for-slack.body.user.username}}; no block applied.\"}}",
+          "payload": "{\"query\": \"mutation AddNoteToAlert($id: String!, $text: String!, $plain: String!) { alertTriggerActions(actions: [{id: \\\"S1/alert/addNote\\\", payload: {formattedNote: {text: $text, plainText: $plain, type: MARKDOWN}}}] filter: {or: [{and: [{fieldId: \\\"id\\\", stringEqual: {value: $id}}]}]}) { ... on ActionsTriggered { actions { actionId success { id } failure { id } skip { id } } } } }\", \"variables\": {\"id\": \"{{singularity-response-trigger.data.id}}\", \"text\": \"### 🚫 Dismissed — False Positive\\n\\n**Analyst:** {{wait-for-slack.body.user.username}} — dismissed via Slack  \\n**Alert:** Multi-vector 'DropDay' campaign (recon + bot + injection) — source `{{local_var.src_ip}}` → shop.soledrop.co\\n\\n| Field | Value |\\n|---|---|\\n| Source IP | `{{local_var.src_ip}}` |\\n| Total hits | **{{local_var.hits}}** |\\n| Recon / Injection | {{local_var.recon_hits}} / {{local_var.injection_hits}} |\\n| Distinct JA3 | {{local_var.distinct_ja3}} |\\n| Distinct paths | {{local_var.distinct_paths}} |\\n| VirusTotal | {{virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious}} malicious ([VirusTotal](https://www.virustotal.com/gui/ip-address/{{local_var.src_ip}})) |\\n| AbuseIPDB | {{abuseipdb-check-ip.body.data.abuseConfidenceScore}}% ([AbuseIPDB](https://www.abuseipdb.com/check/{{local_var.src_ip}})) |\\n\\n**No Cloudflare block was applied.**  \\n**Rationale:** Multi-signal pattern matches an authorized red-team / CTF exercise window or a scanner.  \\n**Verdict:** False Positive — Benign\\n\\n**Recommended next actions:** No block. Tag as authorized-testing and suppress the campaign correlation for the window.\\n\\n**🔎 Investigate — copy into Event Search (PowerQuery, adjust the time range to the alert window):**\\n\\n```\\nclass_uid=4002 dataSource.cloudflare_dataset='HTTP Requests' | filter src_endpoint.ip = '{{local_var.real_ip}}' | columns timestamp, http_request.url.path, tls.ja3_hash.value, http_request.user_agent | sort -timestamp | limit 200\\n```\", \"plain\": \"Alert dismissed as false positive by {{wait-for-slack.body.user.username}}; no block applied.\"}}",
           "parameters": [],
           "retry_on_status_code": null,
           "retry_on_status_codes": [
