@@ -1,0 +1,262 @@
+{
+  "Cloudflare JD Cloud IP Details": {
+    "id": "46eafa14-d54e-4d37-9147-ac0ac095e93e",
+    "method": "GET",
+    "path": "/client/v4/ips"
+  },
+  "Create an IP Access rule": {
+    "id": "9db31c31-8713-4cff-924c-5d8dc392c8f2",
+    "method": "POST",
+    "path": "/client/v4/user/firewall/access_rules/rules"
+  },
+  "Create Bucket": {
+    "id": "0f98dc78-ce3e-4281-97e3-ec748af3f292",
+    "method": "POST",
+    "path": "/client/v4/accounts/<<account_id>>/r2/buckets/<<bucket_name>>"
+  },
+  "Create DNS Firewall Cluster": {
+    "id": "4cb721f2-d8ba-4180-b6ea-7c040a8a1e37",
+    "method": "POST",
+    "path": "/client/v4/accounts/<<account_id>>/dns_firewall"
+  },
+  "Create DNS Record": {
+    "id": "828d96cc-222b-48dd-ae76-6ac0a69679ca",
+    "method": "POST",
+    "path": "/client/v4/zones/<<zone_id>>/dns_records"
+  },
+  "Create firewall rules": {
+    "id": "2fb46ecc-d6aa-478e-aab2-5e92ffa09794",
+    "method": "POST",
+    "path": "/client/v4/zones/<<zone_id>>/firewall/rules"
+  },
+  "Create Load Balancer": {
+    "id": "a4b6eb58-848b-4f24-8e33-215d563706e6",
+    "method": "POST",
+    "path": "/client/v4/zones/<<zone_id>>/load_balancers"
+  },
+  "Create PCAP request": {
+    "id": "d7b33eb1-e0c6-44ee-90ac-c0d99d5fe11f",
+    "method": "POST",
+    "path": "/client/v4/accounts/<<account_id>>/pcaps"
+  },
+  "Create simple pcap": {
+    "id": "67dd2932-8dea-44f7-8526-f4955fa6eb7c",
+    "method": "POST",
+    "path": "/client/v4/accounts/<<account_id>>/pcaps"
+  },
+  "Create Zone": {
+    "id": "ecde61da-ed1c-482f-b0a4-c03942ccddd8",
+    "method": "POST",
+    "path": "/client/v4/zones"
+  },
+  "Delete a firewall rule": {
+    "id": "65c19248-8f24-47be-8c0f-99aae4ea6291",
+    "method": "DELETE",
+    "path": "/client/v4/zones/<<zone_id>>/firewall/rules/<<rule_id>>"
+  },
+  "Delete an IP Access rule": {
+    "id": "0c2130ed-c52b-4893-981d-617f538626bd",
+    "method": "DELETE",
+    "path": "/client/v4/user/firewall/access_rules/rules/92f17202ed8bd63d69a66b86a49a8f6b"
+  },
+  "Delete Bucket": {
+    "id": "3cd68c05-9700-453f-96ab-1df8fb8b907e",
+    "method": "DELETE",
+    "path": "/client/v4/accounts/<<account_id>>/r2/buckets/<<bucket_name>>"
+  },
+  "Delete DNS Firewall Cluster": {
+    "id": "181cb960-6f7a-420e-a3a8-ee7c4f00964c",
+    "method": "DELETE",
+    "path": "/client/v4/accounts/<<account_id>>/dns_firewall/<<firewall_id>>"
+  },
+  "Delete DNS Record": {
+    "id": "bd6c1c99-5c5b-4742-8353-2b43bd0c055a",
+    "method": "DELETE",
+    "path": "/client/v4/zones/<<zone_id>>/dns_records/<<record_id>>"
+  },
+  "Delete Load Balancer": {
+    "id": "7429add6-099b-4f77-80fd-470a734e3718",
+    "method": "DELETE",
+    "path": "/client/v4/zones/<<zone_id>>/load_balancers/<<load_balancer_id>>"
+  },
+  "Delete Zone in Cloudflare": {
+    "id": "15ac9db0-1ee1-4bb9-9ea4-8d3001a08b6d",
+    "method": "DELETE",
+    "path": "/client/v4/zones/<<zone_id>>"
+  },
+  "DNS Firewall Cluster Details": {
+    "id": "6f0a1573-77a3-4ef4-b23e-26ffab458fca",
+    "method": "GET",
+    "path": "/client/v4/accounts/<<account_id>>/dns_firewall/<<firewall_id>>"
+  },
+  "DNS Record Details": {
+    "id": "0373550e-3552-44c6-9d10-1f335ecd65db",
+    "method": "GET",
+    "path": "/client/v4/zones/<<zone_id>>/dns_records/<<record_id>>"
+  },
+  "Download Simple PCAP": {
+    "id": "83da78bd-f8c7-4365-8412-e4bcd404af4e",
+    "method": "GET",
+    "path": "/client/v4/accounts/<<account_id>>/pcaps/<<request_id>>/download"
+  },
+  "Edit Zone": {
+    "id": "70c1ff7b-18f7-4946-895c-d0365a1bfd76",
+    "method": "PATCH",
+    "path": "/client/v4/zones/<<zone_id>>"
+  },
+  "Export DNS Records": {
+    "id": "5c26b72e-6b3b-4e91-a3b3-945e073556c1",
+    "method": "GET",
+    "path": "/client/v4/zones/<<zone_id>>/dns_records/export"
+  },
+  "Get a firewall rule": {
+    "id": "4a2b57cf-bf43-48d0-aa8e-a85ce9daab28",
+    "method": "GET",
+    "path": "/client/v4/zones/<<zone_id>>/firewall/rules/<<rule_id>>"
+  },
+  "Get a WAF package": {
+    "id": "56274eee-4b5f-4243-b0d7-86b1dcb4cdda",
+    "method": "GET",
+    "path": "/client/v4/zones/<<cloudflare>>/firewall/waf/packages/<<package_id>>"
+  },
+  "Get a WAF rule": {
+    "id": "043d1a5a-b13b-44ff-bf62-00dcf2e60b1c",
+    "method": "GET",
+    "path": "/client/v4/zones/<<zone_id>>/firewall/waf/packages/<<package_id>>/rules/<<rule_id>>"
+  },
+  "Get billing profile": {
+    "id": "e66b4c2f-8b97-4da9-8147-47d1eb47f358",
+    "method": "GET",
+    "path": "/client/v4/accounts/<<account_id>>/billing/profile"
+  },
+  "Get firewall rules": {
+    "id": "5e7e1ffa-b883-46c4-ab26-08bb04887115",
+    "method": "GET",
+    "path": "/client/v4/zones/023e105f4ecef8ad9ca31a8372d0c353/firewall/rules"
+  },
+  "Get IP Overview": {
+    "id": "170fef59-6471-4e65-8ccc-9d841fb33426",
+    "method": "GET",
+    "path": "/client/v4/accounts/<<account_id>>/intel/ip"
+  },
+  "Get PCAP request": {
+    "id": "8d6ffd68-0a93-4b3c-a609-d3ca92f49bd7",
+    "method": "GET",
+    "path": "/client/v4/accounts/<<account_id>>/pcaps/<<request_id>>"
+  },
+  "Get user audit logs": {
+    "id": "6967714a-d934-464a-9da2-be44867a96f7",
+    "method": "GET",
+    "path": "/client/v4/user/audit_logs"
+  },
+  "Get zero trust user failed logins": {
+    "id": "a3620341-5c10-4c7e-bf3b-41167b7ad137",
+    "method": "GET",
+    "path": "/client/v4/accounts/<<account_id>>/access/users/<<user_id>>/failed_logins"
+  },
+  "Get zero trust users": {
+    "id": "31c92893-c696-4264-bf17-dd0ae3fb5516",
+    "method": "GET",
+    "path": "/client/v4/accounts/<<account_id>>/access/users"
+  },
+  "List DNS Firewall Clusters": {
+    "id": "dae6f469-323e-4457-8bb7-9e4fbe5fd044",
+    "method": "GET",
+    "path": "/client/v4/accounts/<<account_id>>/dns_firewall"
+  },
+  "List DNS Records": {
+    "id": "752058a2-44a7-4b01-a782-70ec1019e1fa",
+    "method": "GET",
+    "path": "/client/v4/zones/<<zone_id>>/dns_records"
+  },
+  "List IP Access rules": {
+    "id": "cff17fd5-fe89-4f01-9660-50e7be9cfa4d",
+    "method": "GET",
+    "path": "/client/v4/user/firewall/access_rules/rules"
+  },
+  "List load balancers": {
+    "id": "fbf9c523-640b-4475-ade8-9ee3c021d6d0",
+    "method": "GET",
+    "path": "/client/v4/zones/<<zone_id>>/load_balancers"
+  },
+  "List packet capture requests": {
+    "id": "cc252e48-4c2c-412b-995b-74ce1dc99790",
+    "method": "GET",
+    "path": "/client/v4/accounts/<<account_id>>/pcaps"
+  },
+  "List WAF packages": {
+    "id": "9e4d9c02-e2b6-449d-aa04-b5808c6579d7",
+    "method": "GET",
+    "path": "/client/v4/zones/<<zone_id>>/firewall/waf/packages"
+  },
+  "List WAF rules": {
+    "id": "c6bdfe8c-07cd-42bf-9646-142341a67eb0",
+    "method": "GET",
+    "path": "/client/v4/zones/<<zone_id>>/firewall/waf/packages/<<package_id>>/rules"
+  },
+  "List Workers": {
+    "id": "52faa5fe-aefb-4f28-a8eb-af503f9159e0",
+    "method": "GET",
+    "path": "/client/v4/accounts/<<account_id>>/workers/scripts"
+  },
+  "List Zones": {
+    "id": "9f9b6800-0d34-4b72-b756-a0de273200b8",
+    "method": "GET",
+    "path": "/client/v4/zones"
+  },
+  "Search load balancer resources": {
+    "id": "5f6421f1-5582-442c-94ba-b0b377016f9d",
+    "method": "GET",
+    "path": "/client/v4/accounts/<<account_id>>/load_balancers/search"
+  },
+  "Update a firewall rule": {
+    "id": "7e1971dc-15c1-4a9b-acfd-dafac1ed7ab9",
+    "method": "PUT",
+    "path": "/client/v4/zones/<<zone_id>>/firewall/rules/<<rule_id>>"
+  },
+  "Update an IP Access rule": {
+    "id": "2148a78b-cca9-423c-91a4-9151ea10fb03",
+    "method": "PATCH",
+    "path": "/client/v4/user/firewall/access_rules/rules/<<rule_id>>"
+  },
+  "Update a WAF package": {
+    "id": "cdfd1cfb-cb9f-4499-9237-8bb138d3c27a",
+    "method": "PATCH",
+    "path": "/client/v4/zones/<<zone_id>>/firewall/waf/packages/<<package_id>>"
+  },
+  "Update a WAF rule": {
+    "id": "94b482c3-4149-49bb-bc9d-8eca94fcc27f",
+    "method": "PATCH",
+    "path": "/client/v4/zones/<<zone_id>>/firewall/waf/packages/<<package_id>>/rules/<<rule_id>>"
+  },
+  "Update dns firewall": {
+    "id": "454a7d30-d7cd-4f86-975a-ebc0b167e6de",
+    "method": "PATCH",
+    "path": "/client/v4/accounts/<<account_id>>/dns_firewall/<<firewall_id>>"
+  },
+  "Update DNS Record": {
+    "id": "f4f9ae35-a4ae-4533-b47a-f86fbb514a7e",
+    "method": "PATCH",
+    "path": "/client/v4/zones/<<zone_id>>/dns_records/<<record_id>>"
+  },
+  "Update load balancer": {
+    "id": "c5c48a64-f3ff-4053-9817-f089125f858b",
+    "method": "PATCH",
+    "path": "/client/v4/zones/<<zone_id>>/load_balancers/<<load_balancer_id>>"
+  },
+  "Update log retention flag": {
+    "id": "3e56b9b0-37c7-479a-994b-9da9d42d4591",
+    "method": "POST",
+    "path": "/client/v4/zones/<<zone_id>>/logs/control/retention/flag"
+  },
+  "Update priority of firewall rule": {
+    "id": "2255adc2-ae0f-4b59-a60c-bb5b56ec588f",
+    "method": "PATCH",
+    "path": "/client/v4/zones/<<zone_id>>/firewall/rules/<<rule_id>>"
+  },
+  "Zone Details": {
+    "id": "da54fc7f-5287-448c-b81a-c62dbd1e50d4",
+    "method": "GET",
+    "path": "/client/v4/zones/<<zone_id>>"
+  }
+}

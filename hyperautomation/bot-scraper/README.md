@@ -1,6 +1,6 @@
 # Bot / Scraper Response — Graduated Cloudflare Mitigation (BotScore)
 
-SOAR response playbook for the OneFlare / NovaMind lab scenario **bot** (`CF-Bot-Scraper`,
+Automated response playbook for the OneFlare / NovaMind lab scenario **bot** (`CF-Bot-Scraper`,
 BotScore-based). Fires on the deployed S1 scheduled detection and applies a graduated Cloudflare
 containment that **keys on Cloudflare's ML BotScore verdict — not the spoofable User-Agent**.
 
