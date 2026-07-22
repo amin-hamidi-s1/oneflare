@@ -1,6 +1,6 @@
 {
   "name": "CF-Access-CredStuffing-Response",
-  "description": "SOAR response for credential stuffing / brute-force login abuse. Triggered by the CF-Access-CredStuffing detection. (1) ENRICH — read src_ip from the alert (entity-mapped) and run a SentinelOne PowerQuery for failed-login count, distinct User-Agents, cross-surface hits. (2) THREAT INTEL — VirusTotal (primary) + AbuseIPDB reputation on src_ip. (3) DECIDE — post an interactive Slack message (evidence + false-positive caveat + Block/Dismiss buttons) and wait for the analyst. (4) RESPOND + CASE UPDATE — APPROVE: block src_ip at the Cloudflare edge (IP Access Rule) -> Slack update -> alert note -> analyst verdict (True Positive Malware only on a malicious threat-intel verdict, else Alert Status In Progress); DISMISS: note + False Positive. Containment is gated on explicit analyst approval and, for the TP verdict, on an independent threat-intel verdict. PREREQUISITES: bind SentinelOne, Slack and Cloudflare connections + free VirusTotal (https://www.virustotal.com/gui/join-us) and AbuseIPDB (https://www.abuseipdb.com/register) API keys; import with a personal Console User token and publish in the same step.",
+  "description": "SOAR response for credential stuffing / brute-force login abuse. Triggered by the CF-Access-CredStuffing detection. (1) ENRICH \u2014 read src_ip from the alert (entity-mapped) and run a SentinelOne PowerQuery for failed-login count, distinct User-Agents, cross-surface hits. (2) THREAT INTEL \u2014 VirusTotal (primary) + AbuseIPDB reputation on src_ip. (3) DECIDE \u2014 post an interactive Slack message (evidence + false-positive caveat + Block/Dismiss buttons) and wait for the analyst. (4) RESPOND + CASE UPDATE \u2014 APPROVE: block src_ip at the Cloudflare edge (IP Access Rule) -> Slack update -> alert note -> analyst verdict (True Positive Malware only on a malicious threat-intel verdict, else Alert Status In Progress); DISMISS: note + False Positive. Containment is gated on explicit analyst approval and, for the TP verdict, on an independent threat-intel verdict. PREREQUISITES: bind SentinelOne, Slack and Cloudflare connections + free VirusTotal (https://www.virustotal.com/gui/join-us) and AbuseIPDB (https://www.abuseipdb.com/register) API keys; import with a personal Console User token and publish in the same step.",
   "actions": [
     {
       "action": {
@@ -17,7 +17,7 @@
             {
               "condition": {
                 "input_value": "name",
-                "compared_value": "CF-Access-CredStuffing — Login Brute Force / Credential Stuffing on portal.soledrop.co",
+                "compared_value": "CF-Access-CredStuffing \u2014 Login Brute Force / Credential Stuffing on portal.soledrop.co",
                 "comparison_operator": "equals"
               },
               "is_disabled": false,
@@ -30,7 +30,7 @@
           ]
         },
         "state": "active",
-        "description": "TRIGGER: fire automatically when the CF-Access-CredStuffing detection raises an alert (event alert / CREATE, matched on rule name 'CF-Access-CredStuffing — Login Brute Force / Credential Stuffing on portal.soledrop.co'). Safe to auto-run — the only destructive action (Cloudflare block) is gated behind explicit Slack analyst approval downstream.",
+        "description": "TRIGGER: fire automatically when the CF-Access-CredStuffing detection raises an alert (event alert / CREATE, matched on rule name 'CF-Access-CredStuffing \u2014 Login Brute Force / Credential Stuffing on portal.soledrop.co'). Safe to auto-run \u2014 the only destructive action (Cloudflare block) is gated behind explicit Slack analyst approval downstream.",
         "client_data": {
           "position": {
             "x": 0.0,
@@ -100,7 +100,7 @@
           "global_var_workflow_access_workflow_ids": null
         },
         "state": "active",
-        "description": "STEP 1a — read the attacker identity straight off the alert. src_ip comes from the alert observable (the detection's entityMappings projects src_ip+host onto the alert), with a fallback to the first indicator. channel_id is the SOC Slack channel (placeholder C0BJH0YCYS1 — swap for your channel). pq_query is the corroborating investigation query (counts 401/403/429 responses from src_ip and distinct UAs/hosts; the /login scoping already lives in the detection, and the query is intentionally double-quote-free so the init-query payload stays valid JSON after substitution). All three vars reference the trigger only (never each other), so a single Variable action is E1-safe. src_ip is read from asset.name (the scheduled detection's entityMappings binds src_ip as the alert asset; observables is empty on CF alerts, and Function.DEFAULT cannot suppress an array index-out-of-range, so asset.name is the safe source) with a literal fallback.",
+        "description": "STEP 1a \u2014 read the attacker identity straight off the alert. src_ip comes from the alert observable (the detection's entityMappings projects src_ip+host onto the alert), with a fallback to the first indicator. channel_id is the SOC Slack channel (placeholder C0BJH0YCYS1 \u2014 swap for your channel). pq_query is the corroborating investigation query (counts 401/403/429 responses from src_ip and distinct UAs/hosts; the /login scoping already lives in the detection, and the query is intentionally double-quote-free so the init-query payload stays valid JSON after substitution). All three vars reference the trigger only (never each other), so a single Variable action is E1-safe. src_ip is read from asset.name (the scheduled detection's entityMappings binds src_ip as the alert asset; observables is empty on CF alerts, and Function.DEFAULT cannot suppress an array index-out-of-range, so asset.name is the safe source) with a literal fallback.",
         "client_data": {
           "position": {
             "x": 0.0,
@@ -166,7 +166,7 @@
           "body_type": null
         },
         "state": "active",
-        "description": "STEP 1b — native SentinelOne (Mgmt) 'Create A Power Query And Get Queryid' (public_action_id 26adfd4c, POST /web/api/v2.1/dv/init-query). Launches the corroborating investigation ASYNC and returns a queryId at body.data.queryId. Uses the console DV API (ApiToken), NOT the raw SDL LRQ Bearer endpoint. Bind the SentinelOne (Mgmt) connection after import. Tune fromDate/toDate to the tenant if DELTA_NOW hour-direction differs.",
+        "description": "STEP 1b \u2014 native SentinelOne (Mgmt) 'Create A Power Query And Get Queryid' (public_action_id 26adfd4c, POST /web/api/v2.1/dv/init-query). Launches the corroborating investigation ASYNC and returns a queryId at body.data.queryId. Uses the console DV API (ApiToken), NOT the raw SDL LRQ Bearer endpoint. Bind the SentinelOne (Mgmt) connection after import. Tune fromDate/toDate to the tenant if DELTA_NOW hour-direction differs.",
         "client_data": {
           "position": {
             "x": 0.0,
@@ -230,7 +230,7 @@
           "global_var_workflow_access_workflow_ids": null
         },
         "state": "active",
-        "description": "STEP 1c — pull enrichment metrics from Create Power Query's INLINE result rows (the deprecated /dv/events/pq returns rows synchronously in body.data.data; pq-ping polling 503'd and is removed). Positional index into the query's columns (src_ip[0], failed_logins[1], distinct_uas[2], ...). jq '(.[0] // [])[n] | values' yields the value or nothing when there are no rows, and Function.DEFAULT then gives 'N/A' — so an unmatched src_ip degrades gracefully. Quote-free jq so no expression-escaping issues.",
+        "description": "STEP 1c \u2014 pull enrichment metrics from Create Power Query's INLINE result rows (the deprecated /dv/events/pq returns rows synchronously in body.data.data; pq-ping polling 503'd and is removed). Positional index into the query's columns (src_ip[0], failed_logins[1], distinct_uas[2], ...). jq '(.[0] // [])[n] | values' yields the value or nothing when there are no rows, and Function.DEFAULT then gives 'N/A' \u2014 so an unmatched src_ip degrades gracefully. Quote-free jq so no expression-escaping issues.",
         "client_data": {
           "position": {
             "x": 0.0,
@@ -295,7 +295,7 @@
           "body_type": null
         },
         "state": "active",
-        "description": "STEP 2a — PRIMARY threat-intel verdict. Native VirusTotal 'Search IP address' (public_action_id 25394f56, GET /api/v3/ip_addresses/<<ip>>) on src_ip. Reads body.data.attributes.last_analysis_stats.malicious (verdict) and body.data.attributes.country (geo). Needs a free VirusTotal API-key connection (https://www.virustotal.com/gui/join-us) bound after import. continue_on_fail so a missing key degrades to notify rather than aborting.",
+        "description": "STEP 2a \u2014 PRIMARY threat-intel verdict. Native VirusTotal 'Search IP address' (public_action_id 25394f56, GET /api/v3/ip_addresses/<<ip>>) on src_ip. Reads body.data.attributes.last_analysis_stats.malicious (verdict) and body.data.attributes.country (geo). Needs a free VirusTotal API-key connection (https://www.virustotal.com/gui/join-us) bound after import. continue_on_fail so a missing key degrades to notify rather than aborting.",
         "client_data": {
           "position": {
             "x": 0.0,
@@ -373,7 +373,7 @@
           "body_type": null
         },
         "state": "active",
-        "description": "STEP 2b — SECONDARY threat-intel. Native AbuseIPDB 'Check IP' (public_action_id 6ea08101). CAVEAT: the catalog maps this action to GET /api/v2/blacklist, which looks mislabeled — single-IP reputation is normally GET /api/v2/check with an ipAddress param (included here). VERIFY the endpoint on the bound connection; treat VirusTotal as authoritative and use AbuseIPDB (body.data.abuseConfidenceScore) only as corroboration. Needs a free AbuseIPDB API-key connection (https://www.abuseipdb.com/register).",
+        "description": "STEP 2b \u2014 SECONDARY threat-intel. Native AbuseIPDB 'Check IP' (public_action_id 6ea08101). CAVEAT: the catalog maps this action to GET /api/v2/blacklist, which looks mislabeled \u2014 single-IP reputation is normally GET /api/v2/check with an ipAddress param (included here). VERIFY the endpoint on the bound connection; treat VirusTotal as authoritative and use AbuseIPDB (body.data.abuseConfidenceScore) only as corroboration. Needs a free AbuseIPDB API-key connection (https://www.abuseipdb.com/register).",
         "client_data": {
           "position": {
             "x": 0.0,
@@ -414,7 +414,7 @@
           "url": "{{Connection.protocol}}{{Connection.url}}<@/api/chat.postMessage@>",
           "url_path": "/api/chat.postMessage",
           "url_prefix": null,
-          "payload": "{\n  \"channel\": \"{{local_var.channel_id}}\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"emoji\": true, \"text\": \"Credential Stuffing — portal.soledrop.co (HIGH)\" }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": { \"type\": \"mrkdwn\", \"text\": \"*A single source is brute-forcing / credential-stuffing the SoleDrop employee portal.*\\n\\n*Source IP:* `{{local_var.src_ip}}`  (geo: {{Function.DEFAULT(virustotal-search-ip.body.data.attributes.country, \"N/A\")}})\\n*VirusTotal:* {{Function.DEFAULT(virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious, \"N/A\")}} engines malicious\\n*AbuseIPDB:* {{Function.DEFAULT(abuseipdb-check-ip.body.data.abuseConfidenceScore, \"N/A\")}}/100 abuse confidence\\n*Failed logins (401/403/429 on /login):* *{{local_var.failed_logins}}*\\n*Distinct User-Agents:* {{local_var.distinct_uas}}\\n*ATT&CK:* T1110.004 / T1110.001\" }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": { \"type\": \"mrkdwn\", \"text\": \"*Before you block:* confirm `{{local_var.src_ip}}` is not a shared corporate VPN/NAT egress — many legitimate users behind one IP can also generate 401s. If it is, Dismiss.\" }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": { \"type\": \"mrkdwn\", \"text\": \"*Alert:* <{{Function.GET_MANAGEMENT_URL()}}/incidents/unified-alerts?alertId={{singularity-response-trigger.data.id}}|{{singularity-response-trigger.data.name}}>\" }\n    },\n    {\n      \"type\": \"actions\",\n      \"elements\": [\n        {\n          \"type\": \"button\",\n          \"text\": { \"type\": \"plain_text\", \"emoji\": true, \"text\": \"Block at Cloudflare\" },\n          \"style\": \"primary\",\n          \"value\": \"approved\"\n        },\n        {\n          \"type\": \"button\",\n          \"text\": { \"type\": \"plain_text\", \"emoji\": true, \"text\": \"Dismiss — False Positive\" },\n          \"style\": \"danger\",\n          \"value\": \"dismissed\"\n        }\n      ]\n    }\n  ]\n}",
+          "payload": "{\n  \"channel\": \"{{local_var.channel_id}}\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"emoji\": true, \"text\": \"Credential Stuffing \u2014 portal.soledrop.co (HIGH)\" }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": { \"type\": \"mrkdwn\", \"text\": \"*A single source is brute-forcing / credential-stuffing the SoleDrop employee portal.*\\n\\n*Source IP:* `{{local_var.src_ip}}`  (geo: {{Function.DEFAULT(virustotal-search-ip.body.data.attributes.country, \"N/A\")}})\\n*VirusTotal:* {{Function.DEFAULT(virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious, \"N/A\")}} engines malicious\\n*AbuseIPDB:* {{Function.DEFAULT(abuseipdb-check-ip.body.data.abuseConfidenceScore, \"N/A\")}}/100 abuse confidence\\n*Failed logins (401/403/429 on /login):* *{{local_var.failed_logins}}*\\n*Distinct User-Agents:* {{local_var.distinct_uas}}\\n*ATT&CK:* T1110.004 / T1110.001\" }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": { \"type\": \"mrkdwn\", \"text\": \"*Before you block:* confirm `{{local_var.src_ip}}` is not a shared corporate VPN/NAT egress \u2014 many legitimate users behind one IP can also generate 401s. If it is, Dismiss.\" }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": { \"type\": \"mrkdwn\", \"text\": \"*Alert:* <{{Function.GET_MANAGEMENT_URL()}}/incidents/unified-alerts?alertId={{singularity-response-trigger.data.id}}|{{singularity-response-trigger.data.name}}>\" }\n    },\n    {\n      \"type\": \"actions\",\n      \"elements\": [\n        {\n          \"type\": \"button\",\n          \"text\": { \"type\": \"plain_text\", \"emoji\": true, \"text\": \"Block at Cloudflare\" },\n          \"style\": \"primary\",\n          \"value\": \"approved\"\n        },\n        {\n          \"type\": \"button\",\n          \"text\": { \"type\": \"plain_text\", \"emoji\": true, \"text\": \"Dismiss \u2014 False Positive\" },\n          \"style\": \"danger\",\n          \"value\": \"dismissed\"\n        }\n      ]\n    }\n  ]\n}",
           "parameters": [],
           "retry_on_status_code": null,
           "retry_on_status_codes": [
@@ -438,7 +438,7 @@
           "body_type": null
         },
         "state": "active",
-        "description": "STEP 3a — native Slack 'Send Interactive Message' (public_action_id 43c970e2, chat.postMessage). Posts the evidence summary (src_ip, geo, VT + AbuseIPDB verdicts, failed-login count, distinct UAs) + FP caveat (shared VPN/NAT egress?) + two buttons: Block at Cloudflare (value=approved) / Dismiss (value=dismissed). Reuses the reference playbook's real Slack connection + integration IDs. Follow with wait_for_slack.",
+        "description": "STEP 3a \u2014 native Slack 'Send Interactive Message' (public_action_id 43c970e2, chat.postMessage). Posts the evidence summary (src_ip, geo, VT + AbuseIPDB verdicts, failed-login count, distinct UAs) + FP caveat (shared VPN/NAT egress?) + two buttons: Block at Cloudflare (value=approved) / Dismiss (value=dismissed). Reuses the reference playbook's real Slack connection + integration IDs. Follow with wait_for_slack.",
         "client_data": {
           "position": {
             "x": 0.0,
@@ -480,7 +480,7 @@
           "value": 1
         },
         "state": "active",
-        "description": "STEP 3b — pause up to 1 hour for the analyst to click Block or Dismiss, correlated to the posted message via its ts. On resume, {{wait-for-slack.body.actions[0].value}} carries the button value and {{wait-for-slack.body.user.username}} the approver.",
+        "description": "STEP 3b \u2014 pause up to 1 hour for the analyst to click Block or Dismiss, correlated to the posted message via its ts. On resume, {{wait-for-slack.body.actions[0].value}} carries the button value and {{wait-for-slack.body.user.username}} the approver.",
         "client_data": {
           "position": {
             "x": 0.0,
@@ -536,7 +536,7 @@
           "conditions_relationship": "and"
         },
         "state": "active",
-        "description": "STEP 3c — branch on the analyst's click. TRUE (value != 'dismissed', i.e. 'approved') -> containment branch (Cloudflare block + write-back). FALSE ('dismissed', or a 1h timeout that leaves value empty -> also != 'approved') -> false-positive branch. No block is ever applied without an explicit approval.",
+        "description": "STEP 3c \u2014 branch on the analyst's click. TRUE (value != 'dismissed', i.e. 'approved') -> containment branch (Cloudflare block + write-back). FALSE ('dismissed', or a 1h timeout that leaves value empty -> also != 'approved') -> false-positive branch. No block is ever applied without an explicit approval.",
         "client_data": {
           "position": {
             "x": 0.0,
@@ -577,12 +577,12 @@
         "data": {
           "name": "Cloudflare Block IP",
           "action_type": "http_request",
-          "public_action_id": "9db31c31-8713-4cff-924c-5d8dc392c8f2",
+          "public_action_id": null,
           "method": "post",
-          "url": "{{Connection.protocol}}{{Connection.url}}<@/client/v4/user/firewall/access_rules/rules@>",
-          "url_path": "/client/v4/user/firewall/access_rules/rules",
+          "url": "{{Connection.protocol}}{{Connection.url}}/client/v4/zones/cf4d15af4a7eb86b033f859aefec1047/firewall/access_rules/rules",
+          "url_path": "/client/v4/zones/cf4d15af4a7eb86b033f859aefec1047/firewall/access_rules/rules",
           "url_prefix": null,
-          "payload": "{\n  \"mode\": \"block\",\n  \"configuration\": { \"target\": \"ip\", \"value\": \"{{local_var.src_ip}}\" },\n  \"notes\": \"OneFlare cred-stuffing auto-block — alert {{singularity-response-trigger.data.id}}\"\n}",
+          "payload": "{\n  \"mode\": \"block\",\n  \"configuration\": { \"target\": \"ip\", \"value\": \"{{local_var.src_ip}}\" },\n  \"notes\": \"OneFlare cred-stuffing auto-block \u2014 alert {{singularity-response-trigger.data.id}}\"\n}",
           "parameters": [],
           "retry_on_status_code": null,
           "retry_on_status_codes": [
@@ -607,7 +607,7 @@
           "body_type": null
         },
         "state": "active",
-        "description": "STEP 4a (APPROVED) — native Cloudflare 'Create an IP Access rule' (public_action_id 9db31c31, POST /client/v4/user/firewall/access_rules/rules). Account/user-scoped block of the attacking src_ip (no zone_id needed). Reverse later with 'Delete an IP Access rule'. Bind the Cloudflare connection after import.",
+        "description": "STEP 4a (APPROVED) \u2014 native Cloudflare 'Create an IP Access rule' (public_action_id 9db31c31, POST /client/v4/user/firewall/access_rules/rules). Account/user-scoped block of the attacking src_ip (no zone_id needed). Reverse later with 'Delete an IP Access rule'. Bind the Cloudflare connection after import.",
         "client_data": {
           "position": {
             "x": -260.0,
@@ -672,7 +672,7 @@
           "body_type": null
         },
         "state": "active",
-        "description": "STEP 4b (APPROVED) — update the original Slack message in place (chat.update) to confirm the block, naming the approver and deep-linking the alert. Reuses the reference Slack connection IDs; public_action_id is 'Post Message' with the URL overridden to chat.update.",
+        "description": "STEP 4b (APPROVED) \u2014 update the original Slack message in place (chat.update) to confirm the block, naming the approver and deep-linking the alert. Reuses the reference Slack connection IDs; public_action_id is 'Post Message' with the URL overridden to chat.update.",
         "client_data": {
           "position": {
             "x": -260.0,
@@ -737,7 +737,7 @@
           "body_type": null
         },
         "state": "active",
-        "description": "STEP 4a (DISMISSED) — update the original Slack message (chat.update) to record that the analyst treated the alert as a false positive; no block applied. Reuses the reference Slack connection IDs.",
+        "description": "STEP 4a (DISMISSED) \u2014 update the original Slack message (chat.update) to record that the analyst treated the alert as a false positive; no block applied. Reuses the reference Slack connection IDs.",
         "client_data": {
           "position": {
             "x": 260.0,
@@ -778,7 +778,7 @@
           "url": "{{Connection.protocol}}{{Connection.url}}/web/api/v2.1/unifiedalerts/graphql",
           "url_path": "/web/api/v2.1/unifiedalerts/graphql",
           "url_prefix": null,
-          "payload": "{\"query\": \"mutation AddNoteToAlert($id: String!, $text: String!, $plain: String!) { alertTriggerActions(actions: [{id: \\\"S1/alert/addNote\\\", payload: {formattedNote: {text: $text, plainText: $plain, type: MARKDOWN}}}] filter: {or: [{and: [{fieldId: \\\"id\\\", stringEqual: {value: $id}}]}]}) { ... on ActionsTriggered { actions { actionId success { id } failure { id } skip { id } } } } }\", \"variables\": {\"id\": \"{{singularity-response-trigger.data.id}}\", \"text\": \"### ✅ Automated Response Approved\\n\\n**Analyst:** {{wait-for-slack.body.user.username}} — approved via Slack  \\n**Alert:** Credential stuffing / brute-force login abuse — source `{{local_var.src_ip}}` → portal.soledrop.co\\n\\n| Field | Value |\\n|---|---|\\n| Source IP | `{{local_var.src_ip}}` |\\n| Failed logins (401/403/429) | **{{local_var.failed_logins}}** |\\n| Distinct user-agents | {{local_var.distinct_uas}} |\\n| VirusTotal | {{virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious}} malicious ([VirusTotal](https://www.virustotal.com/gui/ip-address/{{local_var.src_ip}})) |\\n| AbuseIPDB | {{abuseipdb-check-ip.body.data.abuseConfidenceScore}}% ([AbuseIPDB](https://www.abuseipdb.com/check/{{local_var.src_ip}})) |\\n\\n**Action taken:** source IP `{{local_var.src_ip}}` blocked at Cloudflare.  \\n**Verdict:** True Positive — Malware · **Status:** In Progress\\n\\n**Recommended next actions:** Confirm no successful login from this source; force password reset + revoke Access sessions for any account it reached; keep the block and watchlist the ASN; verify `/login` rate-limiting + MFA.\\n\\n**🔎 Investigate — copy into Event Search (PowerQuery, adjust the time range to the alert window):**\\n\\n```\\nclass_uid=4002 dataSource.cloudflare_dataset='HTTP Requests' | filter src_endpoint.ip = '{{local_var.real_ip}}' | let uri = http_request.url.url_string | let status = unmapped.EdgeResponseStatus | filter uri contains:anycase('/login') | columns timestamp, src_endpoint.ip, status, http_request.user_agent, uri | sort -timestamp | limit 200\\n```\", \"plain\": \"Alert approved by {{wait-for-slack.body.user.username}}; source {{local_var.src_ip}} blocked at Cloudflare.\"}}",
+          "payload": "{\"query\": \"mutation AddNoteToAlert($id: String!, $text: String!, $plain: String!) { alertTriggerActions(actions: [{id: \\\"S1/alert/addNote\\\", payload: {formattedNote: {text: $text, plainText: $plain, type: MARKDOWN}}}] filter: {or: [{and: [{fieldId: \\\"id\\\", stringEqual: {value: $id}}]}]}) { ... on ActionsTriggered { actions { actionId success { id } failure { id } skip { id } } } } }\", \"variables\": {\"id\": \"{{singularity-response-trigger.data.id}}\", \"text\": \"### \u2705 Automated Response Approved\\n\\n**Analyst:** {{wait-for-slack.body.user.username}} \u2014 approved via Slack  \\n**Alert:** Credential stuffing / brute-force login abuse \u2014 source `{{local_var.src_ip}}` \u2192 portal.soledrop.co\\n\\n| Field | Value |\\n|---|---|\\n| Source IP | `{{local_var.src_ip}}` |\\n| Failed logins (401/403/429) | **{{local_var.failed_logins}}** |\\n| Distinct user-agents | {{local_var.distinct_uas}} |\\n| VirusTotal | {{virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious}} malicious ([VirusTotal](https://www.virustotal.com/gui/ip-address/{{local_var.src_ip}})) |\\n| AbuseIPDB | {{abuseipdb-check-ip.body.data.abuseConfidenceScore}}% ([AbuseIPDB](https://www.abuseipdb.com/check/{{local_var.src_ip}})) |\\n\\n**Action taken:** source IP `{{local_var.src_ip}}` blocked at Cloudflare.  \\n**Verdict:** True Positive \u2014 Malware \u00b7 **Status:** In Progress\\n\\n**Recommended next actions:** Confirm no successful login from this source; force password reset + revoke Access sessions for any account it reached; keep the block and watchlist the ASN; verify `/login` rate-limiting + MFA.\\n\\n**\ud83d\udd0e Investigate \u2014 copy into Event Search (PowerQuery, adjust the time range to the alert window):**\\n\\n```\\nclass_uid=4002 dataSource.cloudflare_dataset='HTTP Requests' | filter src_endpoint.ip = '{{local_var.real_ip}}' | let uri = http_request.url.url_string | let status = unmapped.EdgeResponseStatus | filter uri contains:anycase('/login') | columns timestamp, src_endpoint.ip, status, http_request.user_agent, uri | sort -timestamp | limit 200\\n```\", \"plain\": \"Alert approved by {{wait-for-slack.body.user.username}}; source {{local_var.src_ip}} blocked at Cloudflare.\"}}",
           "parameters": [],
           "retry_on_status_code": null,
           "retry_on_status_codes": [
@@ -802,7 +802,7 @@
           "body_type": null
         },
         "state": "active",
-        "description": "STEP 4c (APPROVED) — native SentinelOne (Unified Alerts) 'Add Note to Alert' (public_action_id 34de543f). Records who approved plus the full evidence line on the alert. Reuses the reference's S1-alert connection + integration IDs. Verify the native note body schema (data.text + filter.ids) against the bound connection.",
+        "description": "STEP 4c (APPROVED) \u2014 native SentinelOne (Unified Alerts) 'Add Note to Alert' (public_action_id 34de543f). Records who approved plus the full evidence line on the alert. Reuses the reference's S1-alert connection + integration IDs. Verify the native note body schema (data.text + filter.ids) against the bound connection.",
         "client_data": {
           "position": {
             "x": -260.0,
@@ -843,7 +843,7 @@
           "url": "{{Connection.protocol}}{{Connection.url}}/web/api/v2.1/unifiedalerts/graphql",
           "url_path": "/web/api/v2.1/unifiedalerts/graphql",
           "url_prefix": null,
-          "payload": "{\"query\": \"mutation AddNoteToAlert($id: String!, $text: String!, $plain: String!) { alertTriggerActions(actions: [{id: \\\"S1/alert/addNote\\\", payload: {formattedNote: {text: $text, plainText: $plain, type: MARKDOWN}}}] filter: {or: [{and: [{fieldId: \\\"id\\\", stringEqual: {value: $id}}]}]}) { ... on ActionsTriggered { actions { actionId success { id } failure { id } skip { id } } } } }\", \"variables\": {\"id\": \"{{singularity-response-trigger.data.id}}\", \"text\": \"### 🚫 Dismissed — False Positive\\n\\n**Analyst:** {{wait-for-slack.body.user.username}} — dismissed via Slack  \\n**Alert:** Credential stuffing / brute-force login abuse — source `{{local_var.src_ip}}` → portal.soledrop.co\\n\\n| Field | Value |\\n|---|---|\\n| Source IP | `{{local_var.src_ip}}` |\\n| Failed logins (401/403/429) | **{{local_var.failed_logins}}** |\\n| Distinct user-agents | {{local_var.distinct_uas}} |\\n| VirusTotal | {{virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious}} malicious ([VirusTotal](https://www.virustotal.com/gui/ip-address/{{local_var.src_ip}})) |\\n| AbuseIPDB | {{abuseipdb-check-ip.body.data.abuseConfidenceScore}}% ([AbuseIPDB](https://www.abuseipdb.com/check/{{local_var.src_ip}})) |\\n\\n**No Cloudflare block was applied.**  \\n**Rationale:** Consistent with a shared corporate/VPN/NAT egress or one locked-out legitimate user, not distributed stuffing.  \\n**Verdict:** False Positive — Benign\\n\\n**Recommended next actions:** No block. If this egress recurs, allowlist it and exclude from the detection.\\n\\n**🔎 Investigate — copy into Event Search (PowerQuery, adjust the time range to the alert window):**\\n\\n```\\nclass_uid=4002 dataSource.cloudflare_dataset='HTTP Requests' | filter src_endpoint.ip = '{{local_var.real_ip}}' | let uri = http_request.url.url_string | let status = unmapped.EdgeResponseStatus | filter uri contains:anycase('/login') | columns timestamp, src_endpoint.ip, status, http_request.user_agent, uri | sort -timestamp | limit 200\\n```\", \"plain\": \"Alert dismissed as false positive by {{wait-for-slack.body.user.username}}; no block applied.\"}}",
+          "payload": "{\"query\": \"mutation AddNoteToAlert($id: String!, $text: String!, $plain: String!) { alertTriggerActions(actions: [{id: \\\"S1/alert/addNote\\\", payload: {formattedNote: {text: $text, plainText: $plain, type: MARKDOWN}}}] filter: {or: [{and: [{fieldId: \\\"id\\\", stringEqual: {value: $id}}]}]}) { ... on ActionsTriggered { actions { actionId success { id } failure { id } skip { id } } } } }\", \"variables\": {\"id\": \"{{singularity-response-trigger.data.id}}\", \"text\": \"### \ud83d\udeab Dismissed \u2014 False Positive\\n\\n**Analyst:** {{wait-for-slack.body.user.username}} \u2014 dismissed via Slack  \\n**Alert:** Credential stuffing / brute-force login abuse \u2014 source `{{local_var.src_ip}}` \u2192 portal.soledrop.co\\n\\n| Field | Value |\\n|---|---|\\n| Source IP | `{{local_var.src_ip}}` |\\n| Failed logins (401/403/429) | **{{local_var.failed_logins}}** |\\n| Distinct user-agents | {{local_var.distinct_uas}} |\\n| VirusTotal | {{virustotal-search-ip.body.data.attributes.last_analysis_stats.malicious}} malicious ([VirusTotal](https://www.virustotal.com/gui/ip-address/{{local_var.src_ip}})) |\\n| AbuseIPDB | {{abuseipdb-check-ip.body.data.abuseConfidenceScore}}% ([AbuseIPDB](https://www.abuseipdb.com/check/{{local_var.src_ip}})) |\\n\\n**No Cloudflare block was applied.**  \\n**Rationale:** Consistent with a shared corporate/VPN/NAT egress or one locked-out legitimate user, not distributed stuffing.  \\n**Verdict:** False Positive \u2014 Benign\\n\\n**Recommended next actions:** No block. If this egress recurs, allowlist it and exclude from the detection.\\n\\n**\ud83d\udd0e Investigate \u2014 copy into Event Search (PowerQuery, adjust the time range to the alert window):**\\n\\n```\\nclass_uid=4002 dataSource.cloudflare_dataset='HTTP Requests' | filter src_endpoint.ip = '{{local_var.real_ip}}' | let uri = http_request.url.url_string | let status = unmapped.EdgeResponseStatus | filter uri contains:anycase('/login') | columns timestamp, src_endpoint.ip, status, http_request.user_agent, uri | sort -timestamp | limit 200\\n```\", \"plain\": \"Alert dismissed as false positive by {{wait-for-slack.body.user.username}}; no block applied.\"}}",
           "parameters": [],
           "retry_on_status_code": null,
           "retry_on_status_codes": [
@@ -867,7 +867,7 @@
           "body_type": null
         },
         "state": "active",
-        "description": "STEP 4b (DISMISSED) — native SentinelOne (Unified Alerts) 'Add Note to Alert' (public_action_id 34de543f). Records the dismissal, that no block was applied, and the rationale. Reuses the reference's S1-alert connection IDs.",
+        "description": "STEP 4b (DISMISSED) \u2014 native SentinelOne (Unified Alerts) 'Add Note to Alert' (public_action_id 34de543f). Records the dismissal, that no block was applied, and the rationale. Reuses the reference's S1-alert connection IDs.",
         "client_data": {
           "position": {
             "x": 260.0,
@@ -923,7 +923,7 @@
           "conditions_relationship": "and"
         },
         "state": "active",
-        "description": "STEP 4d (APPROVED) — evidence-discipline gate on the verdict. TRUE (VirusTotal malicious > 0) -> set analyst verdict True Positive Malware. FALSE (no independent malicious verdict) -> only move status to In Progress. Per the S1 persona rules, a True-Positive verdict requires independent threat-intel confirmation, never the block action alone.",
+        "description": "STEP 4d (APPROVED) \u2014 evidence-discipline gate on the verdict. TRUE (VirusTotal malicious > 0) -> set analyst verdict True Positive Malware. FALSE (no independent malicious verdict) -> only move status to In Progress. Per the S1 persona rules, a True-Positive verdict requires independent threat-intel confirmation, never the block action alone.",
         "client_data": {
           "position": {
             "x": -260.0,
@@ -993,7 +993,7 @@
           "body_type": null
         },
         "state": "active",
-        "description": "STEP 4c (DISMISSED) — native SentinelOne (Unified Alerts) 'Set Analyst Verdict as False Positive Undefined' (public_action_id fb264d94). Closes the loop by recording the analyst's FP verdict on the alert. Terminal node of the dismissed branch.",
+        "description": "STEP 4c (DISMISSED) \u2014 native SentinelOne (Unified Alerts) 'Set Analyst Verdict as False Positive Undefined' (public_action_id fb264d94). Closes the loop by recording the analyst's FP verdict on the alert. Terminal node of the dismissed branch.",
         "client_data": {
           "position": {
             "x": 260.0,
@@ -1052,7 +1052,7 @@
           "body_type": null
         },
         "state": "active",
-        "description": "STEP 4e (APPROVED, VT malicious) — native SentinelOne (Unified Alerts) 'Set Analyst Verdict as True Positive Malware' (public_action_id 8ec867d8). Only reached when VirusTotal independently confirmed the IP as malicious. Terminal node of this branch.",
+        "description": "STEP 4e (APPROVED, VT malicious) \u2014 native SentinelOne (Unified Alerts) 'Set Analyst Verdict as True Positive Malware' (public_action_id 8ec867d8). Only reached when VirusTotal independently confirmed the IP as malicious. Terminal node of this branch.",
         "client_data": {
           "position": {
             "x": -420.0,
@@ -1111,7 +1111,7 @@
           "body_type": null
         },
         "state": "active",
-        "description": "STEP 4e (APPROVED, no TI confirmation) — native SentinelOne (Unified Alerts) 'Set Alert Status to In Progress' (public_action_id b9658ad8). Block was applied on analyst approval but VirusTotal did not confirm malicious, so the alert is left In Progress (max classification SUSPICIOUS — Pending Confirmation), not marked True Positive. Terminal node of this branch.",
+        "description": "STEP 4e (APPROVED, no TI confirmation) \u2014 native SentinelOne (Unified Alerts) 'Set Alert Status to In Progress' (public_action_id b9658ad8). Block was applied on analyst approval but VirusTotal did not confirm malicious, so the alert is left In Progress (max classification SUSPICIOUS \u2014 Pending Confirmation), not marked True Positive. Terminal node of this branch.",
         "client_data": {
           "position": {
             "x": -100.0,

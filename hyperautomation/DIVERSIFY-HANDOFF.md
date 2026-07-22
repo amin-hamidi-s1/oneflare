@@ -7,6 +7,46 @@ site `2433185103040607397`, account `1472380766023399132`. Creds in repo `.env.l
 
 ---
 
+## ✅ UPDATE 2026-07-21 (session 2) — diversify built + deployed; live 7 switched to zone-level
+
+**All 8 diversify playbooks (7 scenarios + `unblock-demo-ips`) are LIVE + active** on the
+console (manual_trigger → Set Context → one validated CF action). All CF endpoints/bodies were
+**live-validated create+delete** on soledrop.co with the `.env.local` CF token. Live console
+list = 7 `CF-*` + 8 `diversify-*`/`unblock`, all `active`, no duplicates.
+
+CF endpoint verdicts (all validated this session — see `tasks/diversify-plan.md`):
+- ✅ Zone IP access rules `/zones/cf4d15af…/firewall/access_rules/rules` (block + managed_challenge)
+- ✅ Gateway DNS `/accounts/b8e637d5…/gateway/rules` (domain block)
+- ✅ Modern Rulesets `/zones/cf4d15af…/rulesets/47e1f8f7…/rules` (route + JA3) — **user granted
+  Zone→WAF/Rulesets Edit; custom-firewall entrypoint id `47e1f8f7826b485498964c658c551f22`**
+- ❌ Legacy `/zones/{zone}/firewall/rules` = **globally decommissioned** (don't use)
+- ❌ `/user/firewall/access_rules/rules` = 403 for API tokens (use zone-level)
+- ❌ IP Intel `/accounts/{acct}/intel/ip` = 403 (Intel scope NOT granted) → **IP-Overview
+  enrichment DEFERRED**
+
+**Live 7 CF-* switched `/user` → zone-level block** (repo + wizard copies + redeployed; block
+node is now a raw http_request, `public_action_id:null`, → `/zones/cf4d15af…/…access_rules`).
+Fully git-revertable if it misbehaves at runtime.
+
+**Import bug fixed (was 422 on every scaffold):** `parent_action` must be `null` for non-loop
+nodes (it's loop-only); wire via `connected_to` only. `variable`/`manual_trigger` need their
+full `data` field sets. See `tasks/lessons.md` 2026-07-21.
+
+**Real unblock:** `scripts/unblock_demo_ips.py` (dry-run default, `--apply` to delete) resets
+all OneFlare zone-access/gateway/ruleset rules. The HA `unblock-demo-ips` is list-only because
+HA per-action execution output is not API-visible.
+
+**Runtime caveat (only confirmable via a UI run):** the diversify/live workflows execute via the
+S1 Cloudflare **connection** (`f1d111b8…`), whose stored creds I can't introspect. Every
+endpoint/body is validated with a token that has the needed scope; a manual UI run + the CF
+console (or `unblock_demo_ips.py --apply` after) confirms the connection carries the same scope
+(esp. Rulesets:Edit for exfil/prompt/campaign).
+
+**Still open:** frontend build + deploy lab-ui so wizard users get the updated copies; optional
+Get-IP-Overview enrichment (needs Intel scope).
+
+---
+
 ## 1. What is DONE and LIVE (7 CF-* response workflows, all active + in repo)
 
 Commits (newest first): `a51b8e3` toggle+PQ notes · `2f6da87` demo IPs · `b5acb72` markdown

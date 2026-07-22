@@ -155,3 +155,29 @@ have quoted it verbatim in the spec.
 strictly non-overlapping directories produced zero merge conflicts across ~8 agents.
 **Lesson:** Dependency-ordered waves + one-dir-per-agent + a pinned spec is a reliable pattern
 for multi-agent builds. Keep doing this; reconcile cross-cutting contracts between waves.
+## 2026-07-21 — HA import: parent_action is for LOOPS ONLY, not flow order
+**Context:** Every diversify-* import 422'd ("Invalid workflow data"). The skeleton looked
+right (envelope name/description/actions/notes matched a live export byte-for-byte; action
+`data` keys matched). Root cause: I set `parent_action` to the *previous* node's export_id
+(var→0, http→1). In HA, flow connectivity is `connected_to.target` ONLY; `parent_action` must
+be `null` except for nodes INSIDE a loop, where it references the loop's export_id
+(validation-rules.md lines 35-36). A real export confirms: ALL non-loop nodes have
+`parent_action: null`, and `export_id`s are arbitrary unique ints (9,8,5,6…), not positional.
+**Lesson:** For non-loop HA workflows: `parent_action: null` on every node; wire strictly via
+`connected_to`. Also: `variable` data needs `variables_scope`+`expire_*`+`global_var_*` keys,
+`manual_trigger` data needs `trigger_type`/`dynamic_properties`/`static_payload`. Fastest
+debug path = round-trip a live `export?ids=all` member, then bisect by swapping in my nodes.
+
+## 2026-07-21 — Cloudflare: /user access rules 403 with API tokens; legacy firewall API is DEAD
+**Context:** diversify CF calls. Two hard CF facts, both validated live on soledrop.co:
+(1) `/client/v4/user/firewall/access_rules/rules` 403s for ANY scoped API token (user scope is
+not token-addressable) — use the zone equivalent `/zones/{zone}/firewall/access_rules/rules`
+(works for block AND managed_challenge). (2) The legacy `/zones/{zone}/firewall/rules` API is
+GLOBALLY decommissioned ("maintenance_mode", HTTP 403 code 10020) — the native "Create firewall
+rules" HA action is broken for everyone. Route/JA3-scoped rules MUST use the modern Rulesets
+API: POST `/zones/{zone}/rulesets/{custom_entrypoint_id}/rules` (needs token Zone→WAF/Rulesets
+Edit). Gateway DNS block `/accounts/{acct}/gateway/rules` works with account Zero-Trust scope.
+**Lesson:** Prefer zone-level endpoints over /user/*. Never assume legacy CF firewall/rules —
+it's dead. Live-probe create+delete before wiring; my .env.local CLOUDFLARE_ZONE_ID pointed at
+the WRONG zone (us.sentinelone.cftenant.com), not soledrop.co (cf4d15af…) — resolve zone by
+name via GET /zones, don't trust the env var.

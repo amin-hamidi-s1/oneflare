@@ -1,6 +1,6 @@
 {
   "name": "diversify-campaign",
-  "description": "Block by JA3 fingerprint (actor rotates IP + spoofs XFF).",
+  "description": "JA3-scoped block: block the actor's TLS fingerprint (they rotate IPs during a drop-day swarm).",
   "actions": [
     {
       "action": {
@@ -12,7 +12,10 @@
         "integration_id": null,
         "data": {
           "name": "Manual Trigger",
-          "action_type": "manual_trigger"
+          "action_type": "manual_trigger",
+          "trigger_type": "static",
+          "dynamic_properties": {},
+          "static_payload": "{}"
         },
         "state": "active",
         "description": "Run manually to test this diversified Cloudflare response in isolation.",
@@ -59,15 +62,27 @@
               "is_secret": false
             },
             {
+              "name": "ruleset_id",
+              "value": "47e1f8f7826b485498964c658c551f22",
+              "should_use_as_output": false,
+              "is_secret": false
+            },
+            {
               "name": "ja3",
               "value": "0a80f68631b6e8b4634dbc261e8ba60b",
               "should_use_as_output": false,
               "is_secret": false
             }
-          ]
+          ],
+          "variables_scope": "local",
+          "expire_in_unit": null,
+          "expire_in_value": null,
+          "expire_method": null,
+          "global_var_workflow_access_type": null,
+          "global_var_workflow_access_workflow_ids": null
         },
         "state": "active",
-        "description": "Demo target values — edit these to test.",
+        "description": "Demo target values \u2014 ja3 = the swarm client fingerprint (tls.ja3_hash.value).",
         "client_data": {
           "position": {
             "x": 0.0,
@@ -75,7 +90,7 @@
           },
           "dimensions": {
             "width": 256.0,
-            "height": 76.0
+            "height": 100.0
           },
           "collapsed": false
         },
@@ -90,7 +105,7 @@
           "payload": null
         }
       ],
-      "parent_action": 0
+      "parent_action": null
     },
     {
       "action": {
@@ -101,14 +116,14 @@
         "use_connection_name": false,
         "integration_id": "0dedd07c-0b9a-4205-9215-03ab1a95eb3a",
         "data": {
-          "name": "Firewall Rule Block JA3",
+          "name": "Ruleset Block JA3",
           "action_type": "http_request",
           "public_action_id": null,
           "method": "post",
-          "url": "{{Connection.protocol}}{{Connection.url}}/client/v4/zones/{{local_var.zone_id}}/firewall/rules",
-          "url_path": "/client/v4/zones/{{local_var.zone_id}}/firewall/rules",
+          "url": "{{Connection.protocol}}{{Connection.url}}/client/v4/zones/{{local_var.zone_id}}/rulesets/{{local_var.ruleset_id}}/rules",
+          "url_path": "/client/v4/zones/{{local_var.zone_id}}/rulesets/{{local_var.ruleset_id}}/rules",
           "url_prefix": null,
-          "payload": "[\n  {\n    \"filter\": { \"expression\": \"(cf.bot_management.ja3_hash eq \\\"{{local_var.ja3}}\\\")\" },\n    \"action\": \"block\",\n    \"description\": \"OneFlare campaign JA3 block\"\n  }\n]",
+          "payload": "{\n  \"action\": \"block\",\n  \"expression\": \"(cf.bot_management.ja3_hash eq \\\"{{local_var.ja3}}\\\")\",\n  \"description\": \"OneFlare campaign JA3 block {{local_var.ja3}}\",\n  \"enabled\": true\n}",
           "parameters": [],
           "retry_on_status_code": null,
           "retry_on_status_codes": [
@@ -132,11 +147,11 @@
           "body_type": null
         },
         "state": "active",
-        "description": "POST zone firewall rule scoped to the JA3 fingerprint. (JA3 present in logs as tls.ja3_hash.value.)",
+        "description": "POST (append) a custom firewall ruleset rule blocking the JA3 fingerprint.",
         "client_data": {
           "position": {
-            "x": -260.0,
-            "y": 1770.0
+            "x": 0.0,
+            "y": 354.0
           },
           "dimensions": {
             "width": 256.0,
@@ -149,7 +164,7 @@
       },
       "export_id": 2,
       "connected_to": [],
-      "parent_action": 1
+      "parent_action": null
     }
   ],
   "notes": []

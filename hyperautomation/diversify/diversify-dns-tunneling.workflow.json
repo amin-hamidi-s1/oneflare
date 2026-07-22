@@ -1,6 +1,6 @@
 {
   "name": "diversify-dns-tunneling",
-  "description": "Block the C2 DOMAIN at Zero-Trust Gateway (the IP block is a no-op for DNS tunneling).",
+  "description": "Block the C2 DOMAIN at Zero-Trust Gateway (an IP block is a no-op for DNS tunneling).",
   "actions": [
     {
       "action": {
@@ -12,7 +12,10 @@
         "integration_id": null,
         "data": {
           "name": "Manual Trigger",
-          "action_type": "manual_trigger"
+          "action_type": "manual_trigger",
+          "trigger_type": "static",
+          "dynamic_properties": {},
+          "static_payload": "{}"
         },
         "state": "active",
         "description": "Run manually to test this diversified Cloudflare response in isolation.",
@@ -64,10 +67,16 @@
               "should_use_as_output": false,
               "is_secret": false
             }
-          ]
+          ],
+          "variables_scope": "local",
+          "expire_in_unit": null,
+          "expire_in_value": null,
+          "expire_method": null,
+          "global_var_workflow_access_type": null,
+          "global_var_workflow_access_workflow_ids": null
         },
         "state": "active",
-        "description": "Demo target values — edit these to test.",
+        "description": "Demo target values \u2014 set c2_domain to the algorithmically-generated C2 base domain.",
         "client_data": {
           "position": {
             "x": 0.0,
@@ -75,7 +84,7 @@
           },
           "dimensions": {
             "width": 256.0,
-            "height": 76.0
+            "height": 100.0
           },
           "collapsed": false
         },
@@ -90,7 +99,7 @@
           "payload": null
         }
       ],
-      "parent_action": 0
+      "parent_action": null
     },
     {
       "action": {
@@ -132,11 +141,11 @@
           "body_type": null
         },
         "state": "active",
-        "description": "POST Gateway DNS policy blocking the C2 domain for all internal hosts.",
+        "description": "POST a Gateway DNS policy blocking the C2 domain for all internal hosts.",
         "client_data": {
           "position": {
-            "x": -260.0,
-            "y": 1770.0
+            "x": 0.0,
+            "y": 354.0
           },
           "dimensions": {
             "width": 256.0,
@@ -149,7 +158,7 @@
       },
       "export_id": 2,
       "connected_to": [],
-      "parent_action": 1
+      "parent_action": null
     }
   ],
   "notes": []

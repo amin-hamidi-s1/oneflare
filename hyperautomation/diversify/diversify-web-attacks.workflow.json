@@ -1,6 +1,6 @@
 {
   "name": "diversify-web-attacks",
-  "description": "Keep the IP block (correct here); optional WAF-rule bump lives in the handoff.",
+  "description": "Block the attacker IP at the shop.soledrop.co zone (correct response for WAF web attacks).",
   "actions": [
     {
       "action": {
@@ -12,7 +12,10 @@
         "integration_id": null,
         "data": {
           "name": "Manual Trigger",
-          "action_type": "manual_trigger"
+          "action_type": "manual_trigger",
+          "trigger_type": "static",
+          "dynamic_properties": {},
+          "static_payload": "{}"
         },
         "state": "active",
         "description": "Run manually to test this diversified Cloudflare response in isolation.",
@@ -53,15 +56,27 @@
           "action_type": "variable",
           "variables": [
             {
+              "name": "zone_id",
+              "value": "cf4d15af4a7eb86b033f859aefec1047",
+              "should_use_as_output": false,
+              "is_secret": false
+            },
+            {
               "name": "src_ip",
               "value": "45.148.10.95",
               "should_use_as_output": false,
               "is_secret": false
             }
-          ]
+          ],
+          "variables_scope": "local",
+          "expire_in_unit": null,
+          "expire_in_value": null,
+          "expire_method": null,
+          "global_var_workflow_access_type": null,
+          "global_var_workflow_access_workflow_ids": null
         },
         "state": "active",
-        "description": "Demo target values — edit these to test.",
+        "description": "Demo target values \u2014 edit src_ip / clear to your real attacker IP.",
         "client_data": {
           "position": {
             "x": 0.0,
@@ -69,7 +84,7 @@
           },
           "dimensions": {
             "width": 256.0,
-            "height": 76.0
+            "height": 100.0
           },
           "collapsed": false
         },
@@ -84,7 +99,7 @@
           "payload": null
         }
       ],
-      "parent_action": 0
+      "parent_action": null
     },
     {
       "action": {
@@ -95,12 +110,12 @@
         "use_connection_name": false,
         "integration_id": "0dedd07c-0b9a-4205-9215-03ab1a95eb3a",
         "data": {
-          "name": "Block IP",
+          "name": "Zone Block IP",
           "action_type": "http_request",
           "public_action_id": null,
           "method": "post",
-          "url": "{{Connection.protocol}}{{Connection.url}}/client/v4/user/firewall/access_rules/rules",
-          "url_path": "/client/v4/user/firewall/access_rules/rules",
+          "url": "{{Connection.protocol}}{{Connection.url}}/client/v4/zones/{{local_var.zone_id}}/firewall/access_rules/rules",
+          "url_path": "/client/v4/zones/{{local_var.zone_id}}/firewall/access_rules/rules",
           "url_prefix": null,
           "payload": "{\n  \"mode\": \"block\",\n  \"configuration\": { \"target\": \"ip\", \"value\": \"{{local_var.src_ip}}\" },\n  \"notes\": \"OneFlare web-attack block {{local_var.src_ip}}\"\n}",
           "parameters": [],
@@ -126,11 +141,11 @@
           "body_type": null
         },
         "state": "active",
-        "description": "POST IP Access rule block (baseline — web-attacks is the one case where IP block is right).",
+        "description": "POST a zone-level IP access rule (mode=block) scoped to soledrop.co.",
         "client_data": {
           "position": {
-            "x": -260.0,
-            "y": 1770.0
+            "x": 0.0,
+            "y": 354.0
           },
           "dimensions": {
             "width": 256.0,
@@ -143,7 +158,7 @@
       },
       "export_id": 2,
       "connected_to": [],
-      "parent_action": 1
+      "parent_action": null
     }
   ],
   "notes": []
