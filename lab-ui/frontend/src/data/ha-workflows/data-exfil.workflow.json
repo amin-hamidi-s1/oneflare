@@ -69,7 +69,7 @@
           "variables": [
             {
               "name": "src_ip",
-              "value": "{{Function.DEFAULT(singularity-response-trigger.data.asset.name, \"0.0.0.0\")}}",
+              "value": "193.32.162.157",
               "should_use_as_output": false,
               "is_secret": false
             },
@@ -82,6 +82,12 @@
             {
               "name": "pq_query",
               "value": "class_uid=4002 dataSource.cloudflare_dataset='HTTP Requests' | let src_ip = src_endpoint.ip | filter src_ip = '{{singularity-response-trigger.data.asset.name}}' | let uri = http_request.url.url_string | let bytes = number(unmapped.EdgeResponseBytes) | let is_sensitive = uri contains:anycase('/export') OR uri contains:anycase('/download') OR uri contains:anycase('/customers') OR uri contains:anycase('/billing') OR uri contains:anycase('/models') OR uri contains:anycase('training-data') | filter uri contains:anycase('/api/v1/') | group api_requests=count(), sensitive_hits=count(is_sensitive), distinct_paths=estimate_distinct(http_request.url.path), max_bytes=max(bytes), largest_uri=max_by(uri, bytes), host=estimate_distinct(http_request.url.hostname), country=any(src_endpoint.location.country) by src_ip | sort -sensitive_hits | limit 1 | columns src_ip, api_requests, sensitive_hits, distinct_paths, max_bytes, largest_uri, host, country",
+              "should_use_as_output": false,
+              "is_secret": false
+            },
+            {
+              "name": "real_ip",
+              "value": "{{Function.DEFAULT(singularity-response-trigger.data.asset.name, \"0.0.0.0\")}}",
               "should_use_as_output": false,
               "is_secret": false
             }

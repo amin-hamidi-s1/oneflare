@@ -69,7 +69,7 @@
           "variables": [
             {
               "name": "src_ip",
-              "value": "{{Function.DEFAULT(singularity-response-trigger.data.asset.name, \"0.0.0.0\")}}",
+              "value": "162.247.74.74",
               "should_use_as_output": false,
               "is_secret": false
             },
@@ -82,6 +82,12 @@
             {
               "name": "pq_query",
               "value": "class_uid=4003 dataSource.cloudflare_dataset='Gateway DNS' unmapped.QueryName=* | let src_ip = src_endpoint.ip | filter src_ip = '{{singularity-response-trigger.data.asset.name}}' | let qname = lower(unmapped.QueryName) | let qlen = len(qname) | group total_queries=count(), distinct_subdomains=estimate_distinct(qname), long_subdomains=count(qlen >= 40), max_label_len=max(qlen), c2_domain=max_by(unmapped.QueryName, qlen), first_seen=oldest(timestamp), last_seen=newest(timestamp) by src_ip | sort -total_queries | limit 1 | columns src_ip, total_queries, distinct_subdomains, long_subdomains, max_label_len, c2_domain, first_seen, last_seen",
+              "should_use_as_output": false,
+              "is_secret": false
+            },
+            {
+              "name": "real_ip",
+              "value": "{{Function.DEFAULT(singularity-response-trigger.data.asset.name, \"0.0.0.0\")}}",
               "should_use_as_output": false,
               "is_secret": false
             }

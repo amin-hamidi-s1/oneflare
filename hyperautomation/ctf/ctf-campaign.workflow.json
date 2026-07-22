@@ -69,7 +69,7 @@
           "variables": [
             {
               "name": "src_ip",
-              "value": "{{Function.DEFAULT(singularity-response-trigger.data.asset.name, \"0.0.0.0\")}}",
+              "value": "104.244.73.29",
               "should_use_as_output": false,
               "is_secret": false
             },
@@ -82,6 +82,12 @@
             {
               "name": "pq_query",
               "value": "class_uid=4002 dataSource.cloudflare_dataset='HTTP Requests' | let src_ip = src_endpoint.ip | filter src_ip = '{{singularity-response-trigger.data.asset.name}}' | group hits=count(), distinct_uas=estimate_distinct(http_request.user_agent), ja3=any(tls.ja3_hash.value), distinct_ja3=estimate_distinct(tls.ja3_hash.value), distinct_paths=estimate_distinct(http_request.url.path), recon_hits=count(http_request.url.path in ('/.env','/.git/HEAD','/api/v1/admin','/api/v1/training-data','/actuator/env')), injection_hits=count(http_request.url.url_string matches '(?i)(ignore previous instructions|do anything now|jailbreak|jndi:|169.254.169.254|etc/passwd|ognl)') by src_ip | sort -hits | limit 1 | columns src_ip, hits, distinct_uas, ja3, distinct_ja3, distinct_paths, recon_hits, injection_hits",
+              "should_use_as_output": false,
+              "is_secret": false
+            },
+            {
+              "name": "real_ip",
+              "value": "{{Function.DEFAULT(singularity-response-trigger.data.asset.name, \"0.0.0.0\")}}",
               "should_use_as_output": false,
               "is_secret": false
             }

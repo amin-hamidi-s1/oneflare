@@ -69,7 +69,7 @@
           "variables": [
             {
               "name": "src_ip",
-              "value": "{{Function.DEFAULT(singularity-response-trigger.data.asset.name, \"0.0.0.0\")}}",
+              "value": "45.148.10.95",
               "should_use_as_output": false,
               "is_secret": false
             },
@@ -82,6 +82,12 @@
             {
               "name": "pq_query",
               "value": "class_uid=4002 dataSource.cloudflare_dataset='HTTP Requests' | let src_ip = src_endpoint.ip | filter src_ip = '{{singularity-response-trigger.data.asset.name}}' | let waf_score = number(unmapped.WAFAttackScore) | let uri = http_request.url.url_string | filter (waf_score >= 1 AND waf_score <= 20) OR uri contains:anycase('../') OR uri contains:anycase('/etc/passwd') OR uri contains:anycase('%2e%2e') | group attack_requests=count(), worst_score=min(waf_score), sample_uri=any(uri), method=any(http_request.http_method), host=estimate_distinct(http_request.url.hostname), country=any(src_endpoint.location.country) by src_ip | sort -attack_requests | limit 1 | columns src_ip, attack_requests, worst_score, sample_uri, method, host, country",
+              "should_use_as_output": false,
+              "is_secret": false
+            },
+            {
+              "name": "real_ip",
+              "value": "{{Function.DEFAULT(singularity-response-trigger.data.asset.name, \"0.0.0.0\")}}",
               "should_use_as_output": false,
               "is_secret": false
             }

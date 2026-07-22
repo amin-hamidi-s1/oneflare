@@ -69,7 +69,7 @@
           "variables": [
             {
               "name": "src_ip",
-              "value": "{{Function.DEFAULT(singularity-response-trigger.data.asset.name, \"0.0.0.0\")}}",
+              "value": "185.220.101.182",
               "should_use_as_output": false,
               "is_secret": false
             },
@@ -82,6 +82,12 @@
             {
               "name": "pq_query",
               "value": "class_uid=4002 dataSource.cloudflare_dataset='HTTP Requests' | let src_ip = src_endpoint.ip | filter src_ip = '{{singularity-response-trigger.data.asset.name}}' | let status = unmapped.EdgeResponseStatus | filter status in ('401','403','429') | group failed_logins=count(), distinct_uas=estimate_distinct(http_request.user_agent), hosts=estimate_distinct(http_request.url.hostname), country=any(src_endpoint.location.country) by src_ip | sort -failed_logins | limit 1 | columns src_ip, failed_logins, distinct_uas, hosts, country",
+              "should_use_as_output": false,
+              "is_secret": false
+            },
+            {
+              "name": "real_ip",
+              "value": "{{Function.DEFAULT(singularity-response-trigger.data.asset.name, \"0.0.0.0\")}}",
               "should_use_as_output": false,
               "is_secret": false
             }

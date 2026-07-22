@@ -69,7 +69,7 @@
           "variables": [
             {
               "name": "src_ip",
-              "value": "{{Function.DEFAULT(singularity-response-trigger.data.asset.name, \"0.0.0.0\")}}",
+              "value": "23.129.64.218",
               "should_use_as_output": false,
               "is_secret": false
             },
@@ -82,6 +82,12 @@
             {
               "name": "pq_query",
               "value": "class_uid=4002 dataSource.cloudflare_dataset='HTTP Requests' | let src_ip = src_endpoint.ip | filter src_ip = '{{singularity-response-trigger.data.asset.name}}' | let bscore = number(unmapped.BotScore) | filter bscore <= 29 | group bot_requests=count(), min_botscore=min(bscore), avg_botscore=avg(bscore), distinct_paths=estimate_distinct(http_request.url.path), sample_ua=any(http_request.user_agent), hosts=estimate_distinct(http_request.url.hostname), country=any(src_endpoint.location.country) by src_ip | sort -bot_requests | limit 1 | columns src_ip, bot_requests, min_botscore, avg_botscore, distinct_paths, sample_ua, hosts, country",
+              "should_use_as_output": false,
+              "is_secret": false
+            },
+            {
+              "name": "real_ip",
+              "value": "{{Function.DEFAULT(singularity-response-trigger.data.asset.name, \"0.0.0.0\")}}",
               "should_use_as_output": false,
               "is_secret": false
             }
