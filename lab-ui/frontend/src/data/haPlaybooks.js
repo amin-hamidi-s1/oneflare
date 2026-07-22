@@ -43,7 +43,20 @@ const UNKNOWN_DEVICE =
 // and (for the verdict) on an independent malicious TI verdict.
 // ---------------------------------------------------------------------------
 
-function responseDiagram({ triggerLabel, triggerDetail, pqLabel, pqDetail, fpCaveat }) {
+// Reusable Cloudflare enrichment + containment nodes (see hyperautomation/*/*.workflow.json).
+const CF_ENRICH_ZONE = { label: 'Cloudflare Zone Details', detail: 'current zone posture / security_level for context (best-effort)' }
+const CF_ENRICH_JD = { label: 'Cloudflare JD Cloud IP Details', detail: 'Cloudflare IP ranges — is the source a CF egress? (best-effort)' }
+const CF_BLOCK = { label: 'Cloudflare Block IP', detail: 'zone IP Access Rule mode=block, target=src_ip', variant: 'destructive' }
+const CF_CHALLENGE = { label: 'Cloudflare Managed-Challenge IP', detail: 'zone IP Access Rule mode=managed_challenge — softer than a hard block', variant: 'destructive' }
+const cfRuleset = (detail) => ({ label: 'Cloudflare Custom Firewall Rule', detail, variant: 'destructive' })
+
+// Every response playbook: (1) read src_ip + one SentinelOne PowerQuery + a best-effort
+// Cloudflare enrichment read, (2) VirusTotal + AbuseIPDB threat intel, (3) an interactive
+// Slack approval (fail-closed, 24h SLA with a US-Central respond-by deadline), (4) on
+// approval — validate (already-blocked check) → scenario-specific Cloudflare containment →
+// a conditional Slack update (clean on success; on ANY action failure it names the failed
+// action + the exact Cloudflare error, e.g. "already blocked") → alert note + TI-gated verdict.
+function responseDiagram({ triggerLabel, triggerDetail, pqLabel, pqDetail, fpCaveat, cfEnrich = CF_ENRICH_ZONE, containment = [CF_BLOCK] }) {
   return {
     blocks: [
       { kind: 'trigger', label: triggerLabel, detail: triggerDetail },
@@ -51,6 +64,7 @@ function responseDiagram({ triggerLabel, triggerDetail, pqLabel, pqDetail, fpCav
         kind: 'enrichment',
         nodes: [
           { label: `SentinelOne PowerQuery — ${pqLabel}`, detail: pqDetail },
+          cfEnrich,
           { label: 'VirusTotal Search IP', detail: 'GET /ip_addresses/{ip} — primary verdict (malicious count, geo)' },
           { label: 'AbuseIPDB Check IP', detail: 'IP reputation — secondary corroboration (abuseConfidenceScore)' },
         ],
@@ -58,21 +72,22 @@ function responseDiagram({ triggerLabel, triggerDetail, pqLabel, pqDetail, fpCav
       {
         kind: 'action',
         nodes: [
-          { label: 'Send Interactive Slack Message', detail: `Block Kit — evidence summary + FP caveat (${fpCaveat}) + [Block at Cloudflare] / [Dismiss] buttons`, variant: 'notify' },
-          { label: 'Wait For Slack (≤1h)', detail: 'pause for the analyst click, correlated by message ts', variant: 'action' },
+          { label: 'Send Interactive Slack Message', detail: `Block Kit — evidence summary + FP caveat (${fpCaveat}) + [Block at Cloudflare] / [Dismiss] buttons + a US-Central respond-by deadline`, variant: 'notify' },
+          { label: 'Wait For Slack (≤24h SLA)', detail: 'pause for the analyst click, correlated by message ts', variant: 'action' },
         ],
       },
       {
         kind: 'decision',
         label: 'Analyst Decision',
-        detail: 'button value != "dismissed" (Block at Cloudflare clicked)',
+        detail: 'button value == "approved" (fail-closed — anything else dismisses)',
         converge: false,
         branches: {
           true: {
-            label: 'approved → contain',
+            label: 'approved → validate + contain',
             nodes: [
-              { label: 'Cloudflare Create IP Access Rule', detail: 'mode = block, target = src_ip', variant: 'destructive' },
-              { label: 'Slack Update — Approved', detail: 'chat.update confirms the block + names the approver', variant: 'notify' },
+              { label: 'Cloudflare List Rules (validate)', detail: 'already-blocked check before acting', variant: 'action' },
+              ...containment,
+              { label: 'Slack Update — success / failure', detail: 'clean confirm on success; on ANY action failure, the failed action + the exact Cloudflare error (e.g. already blocked) + alert link', variant: 'notify' },
               { label: 'S1 Add Note — Approved', detail: 'evidence summary + approver written to the alert', variant: 'note' },
               { label: 'Set Verdict (TI-gated)', detail: 'VirusTotal malicious > 0 → True Positive Malware, else → Status In Progress', variant: 'note' },
             ],
@@ -82,7 +97,7 @@ function responseDiagram({ triggerLabel, triggerDetail, pqLabel, pqDetail, fpCav
             nodes: [
               { label: 'Slack Update — Dismissed', detail: 'chat.update records the FP call, no block applied', variant: 'notify' },
               { label: 'S1 Add Note — Dismissed', detail: 'dismissal rationale written to the alert', variant: 'note' },
-              { label: 'Verdict — False Positive Undefined', detail: 'closes the loop on the alert', variant: 'note' },
+              { label: 'Verdict — False Positive Benign', detail: 'closes the loop on the alert', variant: 'note' },
             ],
           },
         },
@@ -100,13 +115,14 @@ const RESPONSE_SETUP = {
   items: [
     { label: 'SentinelOne (Mgmt + Unified Alerts)', detail: 'API token — PowerQuery (DV API) + Add Note / Set Verdict' },
     { label: 'Slack', detail: 'bot token — interactive approval channel (chat.postMessage / chat.update)' },
-    { label: 'Cloudflare', detail: 'API token with Zone WAF / Firewall edit' },
+    { label: 'Cloudflare', detail: 'API token — Zone WAF/Rulesets + DNS edit + account Gateway (block / challenge / route / DNS / under-attack)' },
     { label: 'VirusTotal', detail: 'free API key', url: 'https://www.virustotal.com/gui/join-us' },
     { label: 'AbuseIPDB', detail: 'free API key', url: 'https://www.abuseipdb.com/register' },
   ],
   note:
     'Import with a personal Console User API token and publish in the same step so the ' +
-    'workflow is visible/editable in the HA console.',
+    'workflow is visible/editable in the HA console. Slack approval SLA is 24 h (the alert ' +
+    'does not expire before then), and the message shows a US-Central respond-by deadline.',
 }
 
 const NATIVE_CONNECTIONS = ['SentinelOne', 'Slack', 'Cloudflare', 'VirusTotal', 'AbuseIPDB']
@@ -122,6 +138,8 @@ function webAttacksDiagram(triggerLabel) {
     pqLabel: 'WAF Attack Enrichment',
     pqDetail: 'native DV API (init-query → query-status → events) — attack_requests, worst_score, sample_uri, method for src_ip',
     fpCaveat: 'authorized vulnerability scan / pentest or sanctioned scanner?',
+    cfEnrich: CF_ENRICH_JD,
+    containment: [CF_BLOCK, cfRuleset('host-scoped rule — block ip.src eq src_ip and http.host eq shop.soledrop.co')],
   })
 }
 
@@ -175,7 +193,7 @@ const credStuffingEntry = {
   connections: [
     'SentinelOne (Mgmt) — ApiToken · PowerQuery / DV API',
     'SentinelOne (Unified Alerts) — ApiToken · Add Note / Set Verdict / Status',
-    'Cloudflare — API token · Firewall Access Rules: Edit',
+    'Cloudflare — API token · Zone WAF/Rulesets + DNS + account Gateway: Edit',
     'Slack — bot token · interactive approval channel',
     'VirusTotal API key',
     'AbuseIPDB API key',
@@ -187,7 +205,7 @@ const credStuffingEntry = {
     items: [
       { label: 'SentinelOne (Mgmt + Unified Alerts)', detail: 'API token — PowerQuery (DV API) + Add Note / Set Verdict' },
       { label: 'Slack', detail: 'bot token — interactive approval channel (chat.postMessage / chat.update)' },
-      { label: 'Cloudflare', detail: 'API token with Zone WAF / Firewall edit' },
+      { label: 'Cloudflare', detail: 'API token — Zone WAF/Rulesets + DNS edit + account Gateway (block / challenge / route / DNS / under-attack)' },
       { label: 'VirusTotal', detail: 'free API key', url: 'https://www.virustotal.com/gui/join-us' },
       { label: 'AbuseIPDB', detail: 'free API key', url: 'https://www.abuseipdb.com/register' },
     ],
@@ -195,51 +213,15 @@ const credStuffingEntry = {
       'Import with a personal Console User API token and publish in the same step so the ' +
       'workflow is visible/editable in the HA console.',
   },
-  diagram: {
-    blocks: [
-      { kind: 'trigger', label: 'CF-Access-CredStuffing — HIGH', detail: 'Login Brute Force / Credential Stuffing on portal.soledrop.co → src_ip (alert observable / entityMappings)' },
-      {
-        kind: 'enrichment',
-        nodes: [
-          { label: 'SentinelOne PowerQuery — Failed-Login Enrichment', detail: 'native DV API (init-query → query-status → events) — failed_logins, distinct_uas, hosts for src_ip, 24h' },
-          { label: 'VirusTotal Search IP', detail: 'GET /ip_addresses/{ip} — primary verdict (malicious count, geo)' },
-          { label: 'AbuseIPDB Check IP', detail: 'IP reputation — secondary corroboration (abuseConfidenceScore)' },
-        ],
-      },
-      {
-        kind: 'action',
-        nodes: [
-          { label: 'Send Interactive Slack Message', detail: 'Block Kit — evidence summary + FP caveat (shared VPN/NAT egress?) + [Block at Cloudflare] / [Dismiss] buttons', variant: 'notify' },
-          { label: 'Wait For Slack (≤1h)', detail: 'pause for the analyst click, correlated by message ts', variant: 'action' },
-        ],
-      },
-      {
-        kind: 'decision',
-        label: 'Analyst Decision',
-        detail: 'button value != "dismissed" (Block at Cloudflare clicked)',
-        converge: false,
-        branches: {
-          true: {
-            label: 'approved → contain',
-            nodes: [
-              { label: 'Cloudflare Create IP Access Rule', detail: 'mode = block, target = src_ip', variant: 'destructive' },
-              { label: 'Slack Update — Approved', detail: 'chat.update confirms the block + names the approver', variant: 'notify' },
-              { label: 'S1 Add Note — Approved', detail: 'evidence summary + approver written to the alert', variant: 'note' },
-              { label: 'Set Verdict (TI-gated)', detail: 'VirusTotal malicious > 0 → True Positive Malware, else → Status In Progress', variant: 'note' },
-            ],
-          },
-          false: {
-            label: 'dismissed → no action',
-            nodes: [
-              { label: 'Slack Update — Dismissed', detail: 'chat.update records the FP call, no block applied', variant: 'notify' },
-              { label: 'S1 Add Note — Dismissed', detail: 'dismissal rationale written to the alert', variant: 'note' },
-              { label: 'Verdict — False Positive Undefined', detail: 'closes the loop on the alert', variant: 'note' },
-            ],
-          },
-        },
-      },
-    ],
-  },
+  diagram: responseDiagram({
+    triggerLabel: 'CF-Access-CredStuffing — HIGH',
+    triggerDetail: 'Login Brute Force / Credential Stuffing on portal.soledrop.co → src_ip (alert observable / entityMappings)',
+    pqLabel: 'Failed-Login Enrichment',
+    pqDetail: 'native DV API (init-query → query-status → events) — failed_logins, distinct_uas, hosts for src_ip, 24h',
+    fpCaveat: 'shared VPN/NAT egress?',
+    cfEnrich: CF_ENRICH_ZONE,
+    containment: [CF_CHALLENGE],
+  }),
 }
 
 // ---------------------------------------------------------------------------
@@ -266,6 +248,8 @@ const dataExfilEntry = {
     pqLabel: 'Bulk-Exfil Enrichment',
     pqDetail: 'native DV API (init-query → query-status → events) — sensitive_hits, distinct_paths, max_bytes, largest_uri for src_ip',
     fpCaveat: 'authorized bulk export / ETL pipeline or backup service account?',
+    cfEnrich: CF_ENRICH_ZONE,
+    containment: [CF_BLOCK, cfRuleset('route rule — block http.host eq api.soledrop.co and uri.path starts_with /export')],
   }),
 }
 
@@ -295,6 +279,8 @@ const botScraperEntry = {
     pqLabel: 'Bot-Scraper Enrichment',
     pqDetail: 'native DV API (init-query → query-status → events) — bot_requests, avg_botscore, distinct_paths, sample_ua for src_ip',
     fpCaveat: 'legitimate crawler — Googlebot/Bingbot, uptime/SEO monitor, or approved partner integration?',
+    cfEnrich: CF_ENRICH_JD,
+    containment: [CF_CHALLENGE],
   }),
 }
 
@@ -324,6 +310,8 @@ const promptInjectionEntry = {
     pqLabel: 'Prompt-Injection Enrichment',
     pqDetail: 'native DV API (init-query → query-status → events) — injection_posts, max_attack_score, distinct_uas, sample_uri/ua for src_ip',
     fpCaveat: 'authorized red-team / QA harness or sanctioned LLM-security scanner?',
+    cfEnrich: CF_ENRICH_ZONE,
+    containment: [CF_BLOCK, cfRuleset('route rule — managed_challenge http.host eq api.soledrop.co and uri.path starts_with /api/v1/chat')],
   }),
 }
 
@@ -351,6 +339,8 @@ const dnsTunnelingEntry = {
     pqLabel: 'DNS-Tunnel Enrichment',
     pqDetail: 'native DV API (init-query → query-status → events) — total_queries, distinct_subdomains, long_subdomains, c2_domain for src_ip',
     fpCaveat: 'shared resolver/forwarder egress or a legitimate high-cardinality cloud service?',
+    cfEnrich: CF_ENRICH_ZONE,
+    containment: [CF_BLOCK, { label: 'Cloudflare Gateway DNS Block', detail: 'Zero-Trust Gateway rule — block the C2 domain', variant: 'destructive' }, { label: 'Cloudflare Create Sinkhole DNS Record', detail: 'A record → 192.0.2.1 (visible in DNS portal)', variant: 'destructive' }],
   }),
 }
 
@@ -380,6 +370,8 @@ const ctfCampaignEntry = {
     pqLabel: 'CTF Campaign Enrichment',
     pqDetail: 'native DV API (init-query → query-status → events) — hits, distinct_uas, ja3, distinct_ja3, distinct_paths, recon_hits, injection_hits for src_ip',
     fpCaveat: 'shared corporate VPN/NAT egress or a sanctioned scanner?',
+    cfEnrich: CF_ENRICH_ZONE,
+    containment: [CF_BLOCK, cfRuleset('JA3 rule — block cf.bot_management.ja3_hash eq <swarm fingerprint>'), { label: 'Cloudflare Edit Zone — Under Attack Mode', detail: 'zone-wide security_level=under_attack (reverted by CF-Reset-Demo)', variant: 'destructive' }],
   }),
 }
 

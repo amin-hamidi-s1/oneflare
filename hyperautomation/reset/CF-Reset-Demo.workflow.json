@@ -1,6 +1,6 @@
 {
-  "name": "CF1-Reset-Demo",
-  "description": "Manual reversal playbook. Removes every OneFlare demo artifact created by the CF1-* playbooks so the Cloudflare portal is clean for the next demo: deletes zone IP access rules, custom-firewall (Ruleset) rules, and Gateway DNS rules whose notes/description/name contain \"OneFlare\"; deletes the sinkhole DNS record; and reverts zone security level to medium. Idempotent (missing artifacts are no-ops). Bind the Cloudflare connection, then run manually.",
+  "name": "CF-Reset-Demo",
+  "description": "Manual reversal playbook. Removes every OneFlare demo artifact created by the CF-* playbooks so the Cloudflare portal is clean for the next demo: deletes zone IP access rules, custom-firewall (Ruleset) rules, and Gateway DNS rules whose notes/description/name contain \"OneFlare\"; deletes the sinkhole DNS record; and reverts zone security level to medium. Idempotent (missing artifacts are no-ops). Bind the Cloudflare connection, then run manually.",
   "actions": [
     {
       "action": {
