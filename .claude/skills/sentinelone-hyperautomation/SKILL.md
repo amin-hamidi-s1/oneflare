@@ -119,6 +119,15 @@ Use this when the workflow contains integration-backed actions:
 - ❌ Defining multiple variables in a single Variable action when one references another — they evaluate simultaneously and will fail with "variable not found"
   ✅ Always use one Variable action per variable when chaining references. One var → one action, always.
 
+- ❌ Guarding a destructive action with a fail-OPEN approval gate (`... not_equals "dismissed"`) — a wait-for-interaction timeout yields an empty value that passes the test and auto-runs the action
+  ✅ Fail CLOSED: test `... equals "approved"` and route the destructive action off the true branch (see `references/validation-rules.md` → Condition rules).
+
+- ❌ Setting `parent_action` to the previous node's `export_id` to express flow order — this 422s on import; `parent_action` is loop-membership only
+  ✅ `parent_action: null` on every non-loop node; wire flow via `connected_to.target` only (see `references/validation-rules.md` → Import / `parent_action` rules).
+
+- ❌ Writing back to an alert (note/verdict/status) via the old `/web/api/v2.0/threats` REST endpoints — they are decommissioned (HTTP 405)
+  ✅ Use the Unified Alerts GraphQL API (`POST /web/api/v2.1/unifiedalerts/graphql`); see `references/api-integration.md` → SentinelOne alert write-backs.
+
 - ❌ Writing documentation without reading `references/documentation-standard.md` first — section order, SVG color coding, and block depth rules are all specified there
   ✅ Always read the documentation standard before producing any HA workflow doc.
 

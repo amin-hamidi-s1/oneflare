@@ -446,6 +446,108 @@ Common import `422` messages:
 
 ---
 
+## SentinelOne alert write-backs — use the Unified Alerts GraphQL API
+
+When a workflow needs to write back to the alert that triggered it — add a note, set the analyst
+verdict, change status, assign a user, or set a ticket id — **use the Unified Alerts GraphQL API,
+not the legacy REST threats endpoints.** The old `POST /web/api/v2.0/threats/*` note/verdict/status
+paths are **decommissioned and return HTTP 405.**
+
+**Endpoint**: `POST {console}/web/api/v2.1/unifiedalerts/graphql`
+(in an HA `http_request` action, target `{{Connection.url}}/web/api/v2.1/unifiedalerts/graphql`).
+
+**Payload**: a raw JSON body `{"query": "<mutation>", "variables": { ... }}`.
+
+**Mutation shape**:
+```graphql
+mutation ($id: String!, $note: String!) {
+  alertTriggerActions(
+    actions: [{ id: "S1/alert/addNote", payload: { note: { value: $note } } }],
+    filter: { or: [{ and: [{ fieldId: "id", stringEqual: { value: $id } }] }] }
+  ) {
+    ... on ActionsTriggered {
+      actions { actionId success { id } failure { id } skip { id } }
+    }
+  }
+}
+```
+
+**Action ids** (the `id` inside each `actions[]` entry):
+
+| Action id | Payload |
+|-----------|---------|
+| `S1/alert/addNote` | `{ note: { value: $note } }` — or rich: `{ formattedNote: { text: $text, plainText: $plain, type: MARKDOWN } }` |
+| `S1/alert/analystVerdictUpdate` | `{ analystVerdict: { value: <ENUM> } }` |
+| `S1/alert/statusUpdate` | `{ status: { value: <ENUM> } }` |
+| `S1/alert/assignUser` | assign an owner to the alert |
+| `S1/alert/setTicketId` | set an external ticket id |
+
+**Critical gotchas** (each cost a live debugging cycle):
+- **Enum values are UNQUOTED GraphQL literals**, not strings. `AnalystVerdict`:
+  `FALSE_POSITIVE_BENIGN` / `TRUE_POSITIVE_MALWARE` / `UNDEFINED` / … ; `Status`:
+  `NEW` / `IN_PROGRESS` / `RESOLVED`. Writing `"IN_PROGRESS"` (quoted) fails.
+- **The `$id` GraphQL variable must be typed `String!`, not `ID!`** — `stringEqual.value`
+  expects a `String`, so an `ID!` variable raises `VariableTypeMismatch`.
+- **`ContentType` enum** for `formattedNote.type` is `HTML | MARKDOWN | PLAIN_TEXT`. `MARKDOWN`
+  renders headings, bold, tables, and links in the alert Notes panel — prefer it for rich,
+  human-readable evidence notes.
+- **Unknown action ids are silently skipped** — the mutation returns an empty `actions: []`
+  rather than erroring. Verify the returned `actions[].success` list.
+- Writes are **eventually-consistent (~5s)** — don't read-after-write immediately and assume
+  failure.
+
+---
+
+## Native integration actions vs generic `http_request`
+
+An action is a **native integration action** when it carries `tag: "integration"` plus a
+`public_action_id` (the catalog identity of a specific action inside an installed integration)
+and, to render as native on the canvas, the vendor's `integration_id`.
+
+- **Live-fetch the action catalog** rather than guessing ids or field names:
+  `GET {base}/public-actions` returns each vendor's `public_action_id`, `integration_id`, and
+  the action's canonical `data` (url, parameters, payload, headers). **Copy the catalog action's
+  `data` verbatim** and only substitute the input placeholders (catalog tokens like `<<ip>>`)
+  with workflow expressions — reconstructing the `data` by hand tends to drop required shape
+  (e.g. params must be `{parameter_name, parameter_value}`, not `{key, value}`).
+- **`url` / `url_path` / `payload` overrides on an integration action ARE honored** — the action
+  then executes as a generic HTTP request through the bound connection. To make a node
+  *unambiguously* a generic request, set `public_action_id: null`.
+- **Null out `connection_id`s in exported workflow JSON for cross-tenant portability.** A
+  hard-coded `connection_id` from the source tenant imports as `404 "connection not found"` in
+  another tenant; leaving it `null` imports clean (the user binds the connection after import).
+- **Prefer NEW API endpoints over deprecated ones** for every native action, and verify the real
+  endpoint before wiring. (Example: the deprecated `/web/api/v2.1/dv/events/pq` PowerQuery path
+  rejects `coalesce()` and other functions and can return empty — for reliable rows use the async
+  LRQ API `POST /sdl/v2/api/queries` (Bearer, poll for completion) or read evidence directly off
+  the triggering alert.)
+
+---
+
+## Export-all + replace-in-place deploy recipe
+
+There is **no in-place update** — re-importing always creates a NEW workflow, and a duplicate
+name auto-suffixes `" (1)"`. To replace a workflow, deactivate → delete → import → activate.
+`base = {console}/web/api/v2.1/hyper-automate/api/public`; auth header `Authorization: ApiToken <token>`.
+
+1. **Export all**: `GET {base}/workflow-import-export/export?ids=all` returns a **ZIP** of every
+   workflow JSON (each member is a `{name, description, actions, notes}` envelope). Use a member
+   as a known-good template for round-trip debugging.
+2. **Deactivate**: `POST {base}/workflows/{id}/deactivate`, body `{"data":{}}` — an ACTIVE
+   workflow cannot be deleted ("Active workflows cannot be archived").
+3. **Delete**: `DELETE {console}/web/api/v2.1/hyper-automate/api/v1/workflows/{id}?siteIds=…`
+   (note the `/api/v1/` path for delete).
+4. **Import**: `POST {base}/workflow-import-export/import?siteIds=…`, body `{"data": <workflow>}`
+   → returns `id` + `version_id`.
+5. **Activate**: `POST {base}/workflows/{id}/{version_id}/activation?siteIds=…`, body
+   `{"data":{"timeout":86400}}` (retry on transient 5xx).
+
+**Per-action execution output is NOT exposed via the API** (the per-action output endpoints
+404). Validate a deployed workflow by triggering it and reading the resulting alert notes /
+downstream side effects — not by inspecting action outputs over the API.
+
+---
+
 ## Console URL Formats
 
 | Region | Pattern |
