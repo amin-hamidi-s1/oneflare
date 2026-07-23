@@ -7,7 +7,7 @@
 .github
 .claude
 reference
-docs
+docs/assets
 detections
 hyperautomation
 parsers
@@ -32,4 +32,12 @@ attack-scripts/README.md
 .env.example
 .mcp.json
 
+# *.md is broadly excluded (most docs aren't needed in the backend image),
+# except the specific files the Docs viewer serves (docs_registry.py) — a
+# directory-level exclude can't be selectively un-ignored for nested files,
+# which is why `docs` above is scoped to just `docs/assets` rather than the
+# whole tree.
 *.md
+!README.md
+!ARCHITECTURE.md
+!docs/*.md

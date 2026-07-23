@@ -29,3 +29,7 @@ attack-scripts/logs/
 
 # local scratch deploy test (not part of the app)
 lab-ui/deploy-test/
+
+# Docker creates this as a host-side mount-point artifact for the nested
+# docs-root bind mounts under ./backend:/app — not real content.
+lab-ui/backend/docs-root/

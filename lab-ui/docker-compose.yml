@@ -15,6 +15,9 @@ services:
       - ../attack-scripts:/app/attack-scripts:ro
       - attack_logs:/app/attack-scripts/logs
       - ./backend:/app
+      - ../README.md:/app/docs-root/README.md:ro
+      - ../ARCHITECTURE.md:/app/docs-root/ARCHITECTURE.md:ro
+      - ../docs:/app/docs-root/docs:ro
     environment:
       - PYTHONPATH=/app/attack-scripts
       # Multi-tenant relay wiring (values from gitignored lab-ui/.env; empty = disabled).

@@ -6,6 +6,7 @@ import ScenarioDetail from './pages/ScenarioDetail.jsx'
 import ThreatOps from './pages/ThreatOps.jsx'
 import Architecture from './pages/Architecture.jsx'
 import Assets from './pages/Assets.jsx'
+import Docs from './pages/Docs.jsx'
 import Settings from './pages/Settings.jsx'
 import Admin from './pages/Admin.jsx'
 import AcceptInvite from './pages/AcceptInvite.jsx'
@@ -21,6 +22,7 @@ export default function App() {
         <Route path="/threatops" element={<ThreatOps />} />
         <Route path="/assets" element={<Assets />} />
         <Route path="/architecture" element={<Architecture />} />
+        <Route path="/docs" element={<Docs />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/admin/accept-invite" element={<AcceptInvite />} />
