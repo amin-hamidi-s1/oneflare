@@ -18,6 +18,10 @@ COPY lab-ui/backend/ .
 # attack-scripts baked in at the same /app/attack-scripts path the app expects
 # (PYTHONPATH below matches docker-compose's dev-time mount path).
 COPY attack-scripts/ /app/attack-scripts/
+# Docs viewer reads these at the DOCS_ROOT path (see docs_registry.py) —
+# baked in the same way attack-scripts is, so the image stays self-contained.
+COPY README.md ARCHITECTURE.md /app/docs-root/
+COPY docs/ /app/docs-root/docs/
 
 ENV PYTHONPATH=/app/attack-scripts
 

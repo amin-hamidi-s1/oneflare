@@ -7,6 +7,7 @@ import {
   Settings,
   Target,
   ShieldCheck,
+  BookOpen,
 } from 'lucide-react'
 import AccountMenu from './AccountMenu'
 
@@ -15,6 +16,7 @@ const NAV_ITEMS = [
   { to: '/scenarios',    label: 'Scenarios',    icon: Target },
   { to: '/assets',       label: 'Assets',       icon: Boxes },
   { to: '/architecture', label: 'Architecture', icon: Network },
+  { to: '/docs',         label: 'Docs',         icon: BookOpen },
 ]
 
 function NavItem({ to, label, icon: Icon, location }) {

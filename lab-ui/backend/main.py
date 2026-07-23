@@ -11,6 +11,8 @@ from pathlib import Path
 from typing import Optional, Union
 from urllib.parse import quote
 
+import docs_registry
+
 app = FastAPI(title="OneFlare Lab API")
 
 app.add_middleware(
@@ -1463,3 +1465,54 @@ def deploy_run(request: Request, body: DeployRunReq):
     })
     return {"ok": True, "connection_id": cfg.get("connection_id"), "label": cfg.get("label"),
             "console_url": console, "site": site, "results": results}
+
+
+# ---------------------------------------------------------------------------
+# Docs viewer — role-gated by the console's own session/RBAC system (same
+# `_session_from_cookies` used everywhere above), not a separate auth
+# mechanism. Single-tenant instances (no RELAY_URL/ADMIN_TOKEN — a partner's
+# own private deployment) have no session system at all, so the operator sees
+# everything; on the shared multi-user console, "admin" and "viewer" (the
+# read-only ops role — same allow_viewer pattern as the registry proxy above)
+# see the admin doc set, "user" and logged-out visitors see attendee-only.
+# ---------------------------------------------------------------------------
+
+def _docs_role(request: Request) -> tuple:
+    """(role, authenticated) for the Docs viewer — "attendee" or "admin"."""
+    if not _multi_user_mode():
+        return "admin", True
+    session = _session_from_cookies(dict(request.cookies))
+    if not session:
+        return "attendee", False
+    role = session.get("role")
+    return ("admin" if role in ("admin", "viewer") else "attendee"), True
+
+
+@app.get("/api/docs")
+async def list_docs(request: Request):
+    """
+    List docs visible to the caller's role.
+    Response: {role, authenticated, docs: [{id, title, min_role, icon}]}
+    """
+    role, authenticated = _docs_role(request)
+    return {
+        "role":          role,
+        "authenticated": authenticated,
+        "docs":          docs_registry.list_docs(role),
+    }
+
+
+@app.get("/api/docs/{doc_id}")
+async def get_doc(doc_id: str, request: Request):
+    """
+    Fetch one doc's raw markdown content.
+    Response : {id, title, content}
+    Errors   : 404 if unknown OR not permitted for the caller's role — an
+               admin-only doc looks identical to a nonexistent one from an
+               attendee's perspective, so the manifest can't be enumerated.
+    """
+    role, _authenticated = _docs_role(request)
+    doc = docs_registry.get_doc(doc_id, role)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Doc not found")
+    return doc

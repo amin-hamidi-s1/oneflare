@@ -317,7 +317,11 @@ SDL (PowerQuery over `class_uid` 4002/4003, `dataSource.name='Cloudflare'`).
   response narrative), [`ARCHITECTURE.md`](ARCHITECTURE.md) (layer/worker/OCSF
   reference), [`docs/multi-tenant-relay.md`](docs/multi-tenant-relay.md) (how
   the shared-lab isolation works), [`docs/infrastructure.md`](docs/infrastructure.md)
-  (Cloudflare infra checklist).
+  (Cloudflare infra checklist). Attendee/admin/troubleshooting guides
+  ([`docs/attendee-guide.md`](docs/attendee-guide.md),
+  [`docs/admin-guide.md`](docs/admin-guide.md),
+  [`docs/troubleshooting-guide.md`](docs/troubleshooting-guide.md)) are also
+  browsable in-console under **Docs**, role-filtered by your account.
 - **Repo layout:** `cloudflare/` (setup script, Workers, WAF, Gateway, relay),
   `attack-scripts/` (scenario scripts), `parsers/` (OCSF parser),
   `detections/`, `hyperautomation/`, `dashboards/` (deployable knowledge
